@@ -23,9 +23,9 @@ Tested on multi-GPU nodes (V100/A100/H200) with the **PyTorch 2.8.0 CUDA 12.9 de
 - [2) Create a Python venv **inside** the container](#2-create-a-python-venv-inside-the-container)
 - [3) Sanity Check (inside the container)](#3-sanity-check-inside-the-container)
 - [4) Inference (inside the container)](#4-inference-inside-the-container)
+  - [Single GPU]
+  - [Multi-GPU]
   - [Streaming & Long Outputs](#streaming--long-outputs)
-  - [PEFT Adapter Inference](#peft-adapter-inference)
-  - [Quality-of-life envs (optional)](#quality-of-life-envs-optional)
 - [5) Training (inside the container)](#5-training-inside-the-container)
   - [Single-GPU (wrapper)](#single-gpu-wrapper)
   - [Multi-GPU (wrapper)](#multi-gpu-wrapper)
@@ -47,7 +47,7 @@ cd /scratch/$USER
 git clone https://github.com/hwang2006/finetuning-gpt-oss-on-supercomputer.git
 cd finetuning-gpt-oss-on-supercomputer
 
-# On SLURM clusters, get an interactive **GPU** shell first (login nodes usually have no GPUs):
+# (Optional) On SLURM clusters, get an interactive **GPU** shell first (login nodes usually have no GPUs):
 # (replace <account> and <gpu-partition> for your site)
 srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
 
@@ -180,7 +180,7 @@ export HF_HOME=/scratch/$USER/.huggingface   # optional but recommended
   --user "Summarize the causes of the aurora borealis."
 ```
 
-### Long answers & streaming
+### Streaming & Long Outputs
 ```bash
 # Stream tokens as they generate
 ./run_infer.sh \
