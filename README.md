@@ -9,7 +9,7 @@ This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT-OSS 
 
 > These instructions work with **Singularity _or_ Apptainer**. On many clusters, `singularity` is a symlink to Apptainer—commands below work unchanged.
 
-Tested on multi-GPU nodes (V100/A100/H200) with the **PyTorch 2.8.0 CUDA 12.9 devel** image.
+Tested on multi-GPU nodes (V100/A100/H200) with the **PyTorch 2.8.0 CUDA 12.9 devel** docker image.
 
 > **Repo name:** `finetuning-gpt-oss-on-supercomputer`
 
