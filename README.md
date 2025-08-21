@@ -213,7 +213,7 @@ Prompts:
 > For >7B models or low VRAM cards, you can shard across GPUs.
 ```bash
 ./run_infer.sh \
-  --multi-gpu 1
+  --multi-gpu 1 \
   --model Qwen/Qwen2.5-7B-Instruct \
   --user "Summarize the causes of the aurora borealis."
 ```
