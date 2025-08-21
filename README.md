@@ -44,7 +44,7 @@ Tested on multi-GPU nodes (V100/A100/H200) with the **PyTorch 2.8.0 CUDA 12.9 de
 ```bash
 # login node
 cd /scratch/$USER
-git clone https://github.com/hwang2006/finetuning-gpt-oss-on-supercomputer.git
+git clone https://github.com/hwang2006/finetuning-gpt-oss-on-hpc.git
 cd finetuning-gpt-oss-on-supercomputer
 
 # (Optional) On SLURM clusters, get an interactive **GPU** shell first (login nodes usually have no GPUs):
@@ -99,7 +99,7 @@ export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 
 ```bash
 # Create venv on scratch and install deps INSIDE the container
-export VENV=/scratch/$USER/test/venv
+export VENV=/scratch/$USER/finetuning-gpt-oss-on-hpc/venv
 
 # (Recommended) set caches to scratch and enable HF accelerated transfers
 export HF_HOME=/scratch/$USER/.huggingface
