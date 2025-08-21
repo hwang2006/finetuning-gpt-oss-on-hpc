@@ -185,7 +185,7 @@ export HF_HOME=/scratch/$USER/.huggingface   # optional but recommended
 # Stream tokens as they generate
 ./run_infer.sh \
   --model openai/gpt-oss-20b \
-  --stream \
+  --stream 1 \
   --max-new 3200 --max-seq-len 8192 \
   --system "You write long-form, comprehensive answers. Produce at least 2,000 words." \
   --user "Explain quantum computing in detail (>2000 words)."
