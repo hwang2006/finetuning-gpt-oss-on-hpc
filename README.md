@@ -124,7 +124,6 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
   pip install -q "huggingface_hub[hf_transfer]>=0.24.0"
   echo "✅ venv ready @ '"$VENV"'"
 '
-
 # Optional: enable accelerated Hub transfers globally
 export HF_HUB_ENABLE_HF_TRANSFER=1
 ```
