@@ -23,8 +23,8 @@ Tested on multi-GPU nodes (V100/A100/H200) with the **PyTorch 2.8.0 CUDA 12.9 de
 - [2) Create a Python venv **inside** the container](#2-create-a-python-venv-inside-the-container)
 - [3) Sanity Check (inside the container)](#3-sanity-check-inside-the-container)
 - [4) Inference (inside the container)](#4-inference-inside-the-container)
-  - [Single GPU]
-  - [Multi-GPU]
+  - [Single GPU](#single-gpu)
+  - [Multi-GPU](#multi--gpu)
   - [Streaming & Long Outputs](#streaming--long-outputs)
 - [5) Training (inside the container)](#5-training-inside-the-container)
   - [Single-GPU (wrapper)](#single-gpu-wrapper)
