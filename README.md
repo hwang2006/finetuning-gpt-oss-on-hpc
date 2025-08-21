@@ -155,6 +155,12 @@ print("unsloth:", unsloth.__version__, "| unsloth_zoo:", unsloth_zoo.__version__
 print("transformers:", transformers.__version__)
 PY
 '
+🦥 Unsloth: Will patch your computer to enable 2x faster free finetuning.
+🦥 Unsloth Zoo will now patch everything to make training faster!
+torch: 2.8.0+cu128 CUDA: 12.8 GPU OK: True
+devices: ['NVIDIA A100 80GB PCIe', 'NVIDIA A100 80GB PCIe']
+unsloth: 2025.8.9 | unsloth_zoo: 2025.8.8
+transformers: 4.55.2
 ```
 
 ---
@@ -163,11 +169,40 @@ PY
 
 > **Tip:** `./run_infer.sh --help` lists all options. To avoid surprises, pass your paths explicitly (`--sif`, `--venv`, `--pyfile`).
 
+```bash
+./run_infer.sh --help
+Usage: ./run_infer.sh [options]
+
+Paths:
+  --sif PATH                 SIF image (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
+  --work DIR                 Work dir (defaults venv/pyfile under it)
+  --venv DIR                 Python venv path (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
+  --pyfile FILE              Path to infer_unsloth.py (default: /scratch/qualis/test/infer_unsloth.py)
+
+Model & decoding:
+  --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
+  --max-seq-len N            (default: 4096)
+  --max-new N                (default: 512)
+  --sample 0|1               do_sample (default: 1)
+  --temp F                   temperature (default: 0.7)
+  --top-p F                  top_p (default: 0.9)
+
+Multi-GPU:
+  --gpus LIST                e.g. "0" or "0,1,2,3"; if unset, auto-detect
+  --multi-gpu 0|1            enable sharding (default: 1)
+  --device-map STR           auto | balanced_low_0 | cuda:0 (default: auto)
+  --headroom GiB             per-GPU reserve (default: 2)
+
+Streaming:
+  --stream 0|1               print tokens as generated (default: 1)
+
+Prompts:
+  --system "TEXT"            system prompt
+  --user "TEXT"              user prompt
+```
+
 ### Single GPU
 ```bash
-export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
-export HF_HOME=/scratch/$USER/.huggingface   # optional but recommended
-
 # Minimal example (Qwen 0.5B)
 ./run_infer.sh \
   --model Qwen/Qwen2.5-0.5B-Instruct \
@@ -198,13 +233,21 @@ export HF_HOME=/scratch/$USER/.huggingface   # optional but recommended
 
 > **Tip:** `./run_train.sh --help` lists all options (LoRA, seq len, BS/GA/LR, etc.).
 
+```bash
+./run_train.sh --help
+Usage: ./run_train.sh [options]
+  --model ID                HF model (default: Qwen/Qwen2.5-0.5B-Instruct)
+  --dataset NAME            HF dataset (default: yahma/alpaca-cleaned)  OR  --jsonl /path/file.jsonl
+  --out DIR                 output dir (default: /scratch/qualis/test/outputs/Qwen2.5-0.5B-Instruct-lora-20250821-152434)
+  --gpus 0,1,2,3            GPUs to use; auto-detect if unset
+  --multi-gpu 0|1           torchrun across GPUs (default: 1)
+  # see file for many more flags (seq len, LoRA, bs/ga/lr, etc.)
+```
+
 ### Single-GPU (wrapper)
 
 ```bash
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
-  export LC_ALL=C.UTF-8 LANG=C.UTF-8
-  source "'"$VENV"'/bin/activate"
-  ./run_train.sh \
+./run_train.sh \
     --model Qwen/Qwen2.5-0.5B-Instruct \
     --dataset yahma/alpaca-cleaned \
     --out /scratch/$USER/test/unsloth-out
@@ -216,13 +259,10 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
 ### Multi-GPU (wrapper)
 
 ```bash
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
-  export LC_ALL=C.UTF-8 LANG=C.UTF-8
-  source "'"$VENV"'/bin/activate"
-  ./run_train.sh \
+./run_train.sh \
     --model Qwen/Qwen2.5-7B-Instruct \
     --dataset yahma/alpaca-cleaned \
-    --gpus 0,1 --multi-gpu 1 \
+    --multi-gpu 1 \
     --out /scratch/$USER/test/unsloth-out-7b
 '
 ```
