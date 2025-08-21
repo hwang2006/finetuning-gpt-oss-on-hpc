@@ -39,7 +39,7 @@ Tested on multi-GPU nodes (V100/A100/H200) with the **PyTorch 2.8.0 CUDA 12.9 de
 
 ## Quick Start
 
-> **Prereqs**: NVIDIA GPU node (Volta/Ampere/Hopper), outbound HTTPS to `huggingface.co`, and Singularity or Apptainer.
+> **Prereqs**: NVIDIA GPU node (Ampere/Hopper), outbound HTTPS to `huggingface.co`, and Singularity or Apptainer.
 
 ```bash
 # login node
