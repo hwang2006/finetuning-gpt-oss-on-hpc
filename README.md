@@ -86,9 +86,10 @@ export SINGULARITY_TMPDIR=/scratch/qualis/.singularity/tmp
 export SINGULARITY_CACHEDIR=/scratch/qualis/.singularity
 mkdir -p /scratch/$USER/sifs
 singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 ```
 
-> **Why “devel” image?** Unsloth compiles Triton kernels at first run; the devel image already includes GCC & build tools, avoiding host bind gymnastics.
+> **Why not "runtime" but “devel” image?** Unsloth compiles Triton kernels at first run; the devel image already includes GCC & build tools, avoiding host bind gymnastics.
 
 > **GPU architectures:** CUDA 12.8/12.9 builds target **Volta+** (V100), **Ampere** (A100) and **Hopper** (H100/H200).
 
@@ -172,7 +173,7 @@ export HF_HOME=/scratch/$USER/.huggingface   # optional but recommended
   --user "Tell me a fun space fact in one sentence."
 ```
 
-### Multi‑GPU
+### Multi GPU
 > For >7B models or low VRAM cards, you can shard across GPUs.
 ```bash
 ./run_infer.sh \
