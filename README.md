@@ -251,7 +251,7 @@ Paths:
                              (default: /scratch/qualis/finetuning-gpt-oss-on-hpc)
   --venv DIR                 Python venv path (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
   --pyfile FILE              Training Python file
-                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/train_unsloth_flex_fix.py)
+                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/train_unsloth_flex.py)
 
 Model & Output:
   --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
@@ -282,7 +282,7 @@ LoRA:
 Training:
   --bs N                     per-device batch size (default: 1)
   --ga N                     gradient accumulation steps (default: 8)
-  --epochs F                 number of epochs (float OK) (default: 1)
+  --epochs F                 number of epochs (float OK) (default: 1.0)
   --lr F                     learning rate (default: 2e-4)
   --warmup F                 warmup ratio (default: 0.03)
   --wd F                     weight decay (default: 0.0)
