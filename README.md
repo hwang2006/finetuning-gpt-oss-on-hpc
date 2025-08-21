@@ -84,9 +84,9 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc 'e
 # One-time pull to your scratch (recommended)
 export SINGULARITY_TMPDIR=/scratch/qualis/.singularity/tmp
 export SINGULARITY_CACHEDIR=/scratch/qualis/.singularity
+
 mkdir -p /scratch/$USER/sifs
 singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
-export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 ```
 
 > **Why not "runtime" but “devel” image?** Unsloth compiles Triton kernels at first run; the devel image already includes GCC & build tools, avoiding host bind gymnastics.
@@ -100,6 +100,7 @@ export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 ```bash
 # Create venv on scratch and install deps INSIDE the container
 export VENV=/scratch/$USER/finetuning-gpt-oss-on-hpc/venv
+export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 
 # (Recommended) set caches to scratch and enable HF accelerated transfers
 export HF_HOME=/scratch/$USER/.huggingface
