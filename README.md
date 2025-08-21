@@ -84,7 +84,8 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc 'e
 # One-time pull to your scratch (recommended)
 export SINGULARITY_TMPDIR=/scratch/qualis/.singularity/tmp
 export SINGULARITY_CACHEDIR=/scratch/qualis/.singularity
-singularity pull pt-2.8.0-cu129-devel.sif docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+mkdir -p /scratch/$USER/sifs
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
 ```
 
 > **Why “devel” image?** Unsloth compiles Triton kernels at first run; the devel image already includes GCC & build tools, avoiding host bind gymnastics.
