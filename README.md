@@ -101,7 +101,7 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
 ## 2) Create a Python venv **inside** the container
 
 ```bash
-# venv on scratch; install deps INSIDE the container
+# create venv virtual environment on scratch; install deps INSIDE the container
 export VENV=/scratch/$USER/finetuning-gpt-oss-on-hpc/venv
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 
@@ -168,6 +168,42 @@ PY
 
 ```bash
 ./run_infer.sh --help
+Usage: ./run_infer.sh [options]
+
+Paths:
+  --sif PATH                 SIF image (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
+  --work DIR                 Work dir (defaults venv/pyfile under it)
+  --venv DIR                 Python venv path (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
+  --pyfile FILE              Path to infer script (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/infer_unsloth.py)
+
+Model & decoding:
+  --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
+  --max-seq-len N            (default: 4096)
+  --max-new N                (default: 512)
+  --sample 0|1               do_sample (default: 1)
+  --temp F                   temperature (default: 0.7)
+  --top-p F                  top_p (default: 0.9)
+
+Multi-GPU:
+  --gpus LIST                e.g. "0" or "0,1,2,3"; if unset, auto-detect
+  --multi-gpu 0|1            enable sharding (default: 1)
+  --device-map STR           auto | balanced_low_0 | cuda:0 (default: auto)
+  --headroom GiB             per-GPU reserve (default: 2)
+
+Streaming:
+  --stream 0|1               print tokens as generated (default: 1)
+
+Prompts:
+  --system "TEXT"            system prompt
+  --user "TEXT"              user prompt
+
+Adapters (PEFT / LoRA):
+  --adapter PATH|REPO        LoRA adapter dir or HF repo (auto-switches script)
+  --base-model ID            Base model to pair with adapter (default: --model)
+  --load-in-4bit 0|1         Load base in 4-bit (default: off)
+Notes:
+  * When --adapter is set, this wrapper auto-switches to infer_with_peft.py
+    if found next to your script or under --work.
 ```
 
 ### Single GPU
@@ -206,6 +242,74 @@ PY
 
 ```bash
 ./run_train.sh --help
+Usage: ./run_train.sh [options]
+
+Paths:
+  --sif PATH                 Singularity image (.sif) path
+                             (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
+  --work DIR                 Work dir (venv + pyfile live here)
+                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc)
+  --venv DIR                 Python venv path (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
+  --pyfile FILE              Training Python file
+                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/train_unsloth_flex_fix.py)
+
+Model & Output:
+  --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
+  --out DIR                  Output dir for adapter/tokenizer
+                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/outputs/Qwen2.5-0.5B-Instruct-lora-20250822-000248)
+
+Datasets:
+  --dataset NAME             HF dataset name (default: yahma/alpaca-cleaned)
+  --split SPLIT              HF dataset split (default: train)
+  --jsonl FILE               JSONL file (enables JSONL mode)
+  --jsonl-prompt NAME        JSONL instruction field (default: instruction)
+  --jsonl-input NAME         JSONL input/ctx field (default: input)
+  --jsonl-response NAME      JSONL response field (default: output)
+
+Prompting / Sequence:
+  --system "TEXT"            System prompt used in chat template
+                             (default: "You are a helpful, careful assistant.")
+  --max-seq-len N            Max sequence length (default: 4096)
+  --packing 0|1              Pack short examples (default: 1)
+
+LoRA:
+  --lora-r N                 LoRA rank r (default: 16)
+  --lora-alpha N             LoRA alpha (default: 16)
+  --lora-dropout F           LoRA dropout (default: 0.0)
+  --lora-targets LIST        Comma-separated target modules
+                             (default: q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj)
+
+Training:
+  --bs N                     per-device batch size (default: 1)
+  --ga N                     gradient accumulation steps (default: 8)
+  --epochs F                 number of epochs (float OK) (default: 1)
+  --lr F                     learning rate (default: 2e-4)
+  --warmup F                 warmup ratio (default: 0.03)
+  --wd F                     weight decay (default: 0.0)
+  --log-steps N              logging steps (default: 10)
+  --save-steps N             checkpoint save steps (default: 500)
+  --eval-steps N             eval steps (0 disables) (default: 0)
+  --seed N                   random seed (default: 42)
+  --bf16 0|1                 enable bf16 if supported (default: 1)
+  --gc 0|1                   gradient checkpointing (default: 1)
+  --workers N                dataset num_proc (default: 4)
+  --report STR               reporting: none|wandb|tensorboard (default: none)
+  --save-limit N             max checkpoints to keep (default: 3)
+  --4bit 0|1                 load base in 4-bit (QLoRA) (default: 1)
+
+GPUs:
+  --gpus LIST                e.g., "0" or "0,1,2,3"; if unset, auto-detect
+                             (current: "<auto>")
+  --multi-gpu 0|1            use torchrun across GPUs (default: 1)
+
+Examples:
+  # Single GPU, Alpaca 1%, 4-bit + packing
+  ./run_train.sh --model Qwen/Qwen2.5-0.5B-Instruct --dataset yahma/alpaca-cleaned --split 'train[:1%]' \
+     --gpus 0 --multi-gpu 0 --out ./out/s1-alpaca1 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 1
+
+  # Two GPUs data parallel (torchrun), IMDB 2%, 4-bit, no packing
+  ./run_train.sh --model Qwen/Qwen2.5-0.5B-Instruct --dataset imdb --split 'train[:2%]' \
+     --gpus 0,1 --multi-gpu 1 --gc 0 --out ./out/dp2-imdb2 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 0
 ```
 
 ### Single-GPU (wrapper)
@@ -225,7 +329,7 @@ PY
 ./run_train.sh \
   --model Qwen/Qwen2.5-7B-Instruct \
   --dataset yahma/alpaca-cleaned \
-  --gpus 0,1 --multi-gpu 1 \
+  --multi-gpu 1 \
   --out /scratch/$USER/unsloth-out-7b
 ```
 
