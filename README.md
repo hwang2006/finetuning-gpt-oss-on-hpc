@@ -1,4 +1,4 @@
-# Finetuning GPT-OSS on Supercomputer (Singularity/Apptainer-only)
+# Finetuning GPT-OSS on a Supercomputer (SLRUM + Singularity)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/downloads/)
