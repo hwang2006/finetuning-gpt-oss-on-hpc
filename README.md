@@ -102,7 +102,8 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
 
 ```bash
 # create venv virtual environment on scratch; install deps INSIDE the container
-export VENV=/scratch/$USER/finetuning-gpt-oss-on-hpc/venv
+export REPO=/scratch/$USER/finetuning-gpt-oss-on-hpc
+export VENV="$REPO/venv"
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 
 # (Recommended) set caches to scratch and enable HF accelerated transfers
@@ -439,6 +440,7 @@ squeue -u $USER
 
 ```bash
 # Where your adapter was saved and your target repo
+export REPO=
 export ADAPTER_DIR=/scratch/$USER/unsloth-out-7b
 export REPO_ID=hwang2006/qwen2.5-7b-alpaca-1pct-lora
 export HF_TOKEN=hf_********************************
