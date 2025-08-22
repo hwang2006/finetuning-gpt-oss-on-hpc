@@ -440,9 +440,12 @@ tail -f slurm-<jobid>.out
 
 ```bash
 # Where your adapter was saved and your target repo
+export REPO=/scratch/$USER/finetuning-gpt-oss-on-hpc
 export ADAPTER_DIR="$REPO/unsloth-out-7b"
-export REPO_ID=hwang2006/qwen2.5-7b-alpaca-1pct-lora
-export HF_TOKEN=hf_********************************
+export REPO_ID=hwang2006/qwen2.5-7b-alpaca-1pct-lora   # <your-username>/<repo-name>
+export HF_TOKEN=hf_********************************    # a token with "Write" scope
+export VENV="$REPO/venv"
+export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 
 singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
   export LC_ALL=C.UTF-8 LANG=C.UTF-8
@@ -460,6 +463,14 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
     --license apache-2.0
 '
 ```
+
+**Target repo naming & permissions**
+
+- Use your **Hugging Face username or org** and a short, descriptive repo name:  
+  `REPO_ID="yourname/qwen2.5-7b-alpaca-1pct-lora"`
+- The script will **create the repo if it doesn’t exist** (public by default). Make it private later if desired.
+- `HF_TOKEN` must have **write access** to that namespace (user/org).  
+- Large files are pushed with **hf_transfer** when available for faster I/O.
 
 This script:
 - Fixes `adapter_config.json` fields if needed  
@@ -507,6 +518,7 @@ This script:
 - **Hub auth:** gated/private models or pushing to private repos require `HF_TOKEN` or a prior `huggingface-cli login`.
 - **Slow downloads/uploads:** `pip install "huggingface_hub[hf_transfer]"` and `export HF_HUB_ENABLE_HF_TRANSFER=1`.
 - **Multi‑GPU training:** `--nproc_per_node` = number of GPUs; `torchrun` launches 1 process/GPU.
+- **If GPUs are visible via `nvidia-smi` but `torch.cuda.is_available()` is `False` inside the container:** check that no conflicting host libraries are present in `LD_LIBRARY_PATH` (e.g., third‑party `ffmpeg` dirs). Prefer `--cleanenv` or prune `LD_LIBRARY_PATH` to `/usr/local/nvidia/lib:/usr/local/nvidia/lib64`.
 
 ---
 
