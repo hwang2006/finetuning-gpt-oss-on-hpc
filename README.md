@@ -345,7 +345,7 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
   source "'"$VENV"'/bin/activate"
   MODEL_ID="Qwen/Qwen2.5-7B-Instruct" \
   DATASET="yahma/alpaca-cleaned" DATASET_SPLIT="train[:2%]" \
-  OUTPUT_DIR="$REPO/unsloth-out-7b" \
+  OUTPUT_DIR="'"$REPO"'/unsloth-out-7b" \
   MAX_SEQ_LEN=4096 USE_4BIT=1 PACKING=1 \
   BATCH_SIZE=1 GRAD_ACCUM=16 EPOCHS=1 LR=1e-4 LOG_STEPS=10 SAVE_STEPS=500 \
   torchrun --standalone --nproc_per_node=2 train_unsloth_flex.py
