@@ -478,7 +478,7 @@ This script:
 
 ```bash
 ./run_infer.sh \
-  --adapter "/scratch/$USER/unsloth-out-7b" \
+  --adapter "$REPO/unsloth-out-7b" \
   --base-model Qwen/Qwen2.5-7B-Instruct \
   --load-in-4bit 1 --stream 1 \
   --user "Write a short, friendly paragraph about learning Python."
