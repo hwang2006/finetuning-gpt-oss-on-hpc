@@ -257,7 +257,7 @@ Paths:
 Model & Output:
   --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
   --out DIR                  Output dir for adapter/tokenizer
-                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/outputs/Qwen2.5-0.5B-Instruct-lora-20250822-000248)
+                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/outputs/Qwen2.5-0.5B-Instruct-lora-YYYYMMDD-HHMMSS)
 
 Datasets:
   --dataset NAME             HF dataset name (default: yahma/alpaca-cleaned)
@@ -356,7 +356,7 @@ singularity exec --nv --cleanenv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" 
 
 ### SLURM batch template (example)
 
-This script trains on all GPUs allocated to the job by calling the host wrapper run_train.sh (which itself launches the container). Save it as train_llm.sbatch and submit with sbatch train_llm.sbatch.
+This script trains on all GPUs allocated to the job by calling the host wrapper `run_train.sh` (which itself launches the container). Save it as `train_llm.sbatch` and submit with `sbatch train_llm.sbatch`.
 
 ```bash
 #!/bin/bash
@@ -420,7 +420,7 @@ sbatch train_llm.sbatch
 ```
 
 ### Notes
-- run_train.sh auto-detects visible GPUs and launches torchrun with one process per GPU (via SLURM_GPUS_ON_NODE).
+- `run_train.sh` auto-detects visible GPUs and launches `torchrun` with one process per GPU (via `SLURM_GPUS_ON_NODE`).
 - To override paths or knobs at submit time:
 ```bash
 sbatch --gpus=2 \
@@ -432,7 +432,7 @@ sbatch --gpus=2 \
 squeue -u $USER
 tail -f slurm-<jobid>.out
 ```
-- Outputs (LoRA adapter, tokenizer, logs) land in the --out directory.
+- Outputs (LoRA adapter, tokenizer, logs) land in the `--out` directory.
 
 ---
 
