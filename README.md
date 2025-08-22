@@ -139,7 +139,7 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 
 ---
 
-## 3) Sanity Check (inside the container)
+## 3) Sanity Check 
 
 > **Import order matters:** import **Unsloth first**, then `torch`/`transformers`.
 
@@ -161,7 +161,7 @@ PY
 
 ---
 
-## 4) Inference (inside the container)
+## 4) Inference 
 
 > **Tip:** `./run_infer.sh --help` lists all options. Pass your paths explicitly if needed (`--sif`, `--venv`, `--pyfile`).  
 > **This section uses *base models only* (no adapters yet).** LoRA adapter inference appears later in §7.
@@ -236,7 +236,7 @@ Notes:
 
 ---
 
-## 5) Training (inside the container)
+## 5) Training 
 
 > **Tip:** `./run_train.sh --help` lists all options (LoRA, seq len, BS/GA/LR, etc.).
 
@@ -312,7 +312,7 @@ Examples:
      --gpus 0,1 --multi-gpu 1 --gc 0 --out ./out/dp2-imdb2 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 0
 ```
 
-### Single-GPU (wrapper)
+### Single-GPU 
 
 ```bash
 ./run_train.sh \
@@ -323,7 +323,7 @@ Examples:
 
 *Or use a local JSONL instead of a Hub dataset: `--jsonl /path/data.jsonl`.*
 
-### Multi-GPU (wrapper)
+### Multi-GPU 
 
 ```bash
 ./run_train.sh \
@@ -335,7 +335,7 @@ Examples:
 
 ### Flexible trainer with torchrun
 
-Use the flexible trainer (`train_unsloth_flex.py`) for more control (packing, JSONL/HF datasets, etc.).
+Use the flexible trainer (`train_unsloth_flex.py`) directly if you want for more control (packing, JSONL/HF datasets, etc.).
 
 ```bash
 # Example: Qwen 7B, Alpaca 1% split, 2 GPUs data parallel
@@ -343,7 +343,7 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
   export LC_ALL=C.UTF-8 LANG=C.UTF-8
   source "'"$VENV"'/bin/activate"
   MODEL_ID="Qwen/Qwen2.5-7B-Instruct" \
-  DATASET="yahma/alpaca-cleaned" DATASET_SPLIT="train[:1%]" \
+  DATASET="yahma/alpaca-cleaned" DATASET_SPLIT="train[:2%]" \
   OUTPUT_DIR="/scratch/$USER/unsloth-out-7b" \
   MAX_SEQ_LEN=4096 USE_4BIT=1 PACKING=1 \
   BATCH_SIZE=1 GRAD_ACCUM=16 EPOCHS=1 LR=1e-4 LOG_STEPS=10 SAVE_STEPS=500 \
