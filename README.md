@@ -21,17 +21,17 @@ Tested on multi‑GPU nodes (A100/H100/H200) with the **PyTorch 2.8.0 • CUDA 1
 - [Repository Layout](#repository-layout)
 - [1) Pull the Container](#1-pull-the-container)
 - [2) Create a Python venv **inside** the container](#2-create-a-python-venv-inside-the-container)
-- [3) Sanity Check (inside the container)](#3-sanity-check-inside-the-container)
-- [4) Inference (inside the container)](#4-inference-inside-the-container)
+- [3) Sanity Check (inside the container)](#3-sanity-check)
+- [4) Inference (inside the container)](#4-inference)
   - [Single GPU](#single-gpu)
   - [Multi-GPU](#multi-gpu)
   - [Streaming & Long Outputs](#streaming--long-outputs)
-- [5) Training (inside the container)](#5-training-inside-the-container)
+- [5) Training (inside the container)](#5-training)
   - [Single-GPU (wrapper)](#single-gpu-wrapper)
   - [Multi-GPU (wrapper)](#multi-gpu-wrapper)
   - [Flexible trainer with torchrun](#flexible-trainer-with-torchrun)
   - [SLURM batch template (example)](#slurm-batch-template-example)
-- [6) Upload LoRA Adapter to Hugging Face (inside the container)](#6-upload-lora-adapter-to-hugging-face-inside-the-container)
+- [6) Upload LoRA Adapter to Hugging Face](#6-upload-lora-adapter-to-hugging-face)
 - [7) Inference with LoRA Adapters (after training/upload)](#7-inference-with-lora-adapters-after-trainingupload)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -436,7 +436,7 @@ tail -f slurm-<jobid>.out
 
 ---
 
-## 6) Upload LoRA Adapter to Hugging Face (inside the container)
+## 6) Upload LoRA Adapter to Hugging Face
 
 ```bash
 # Where your adapter was saved and your target repo
