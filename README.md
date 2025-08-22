@@ -440,8 +440,7 @@ tail -f slurm-<jobid>.out
 
 ```bash
 # Where your adapter was saved and your target repo
-export REPO=
-export ADAPTER_DIR=/scratch/$USER/unsloth-out-7b
+export ADAPTER_DIR="$REPO/unsloth-out-7b"
 export REPO_ID=hwang2006/qwen2.5-7b-alpaca-1pct-lora
 export HF_TOKEN=hf_********************************
 
