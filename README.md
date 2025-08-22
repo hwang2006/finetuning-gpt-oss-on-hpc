@@ -512,7 +512,7 @@ sbatch --gpus=2 \
 ```
 
 #### Train from a local JSONL
-bash```
+```bash
 sbatch --gpus=2 \
   --export=ALL,MODEL_ID=Qwen/Qwen2.5-7B-Instruct,DATASET=yahma/alpaca-cleaned,DATASET_SPLIT='train[:1%]',PACKING=1,USE_4BIT=1 \
   train_llm.sbatch
