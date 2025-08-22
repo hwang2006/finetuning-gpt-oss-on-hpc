@@ -1,0 +1,10 @@
+{"instruction":"Write a short poem about oceans","input":"","output":"Oceans whisper..."}
+{"instruction":"Explain gravity to a child","input":"","output":"Gravity is like..."}
+{"instruction":"Translate to Korean","input":"Hello, friend!","output":"안녕, 친구!"}
+{"instruction":"Summarize this","input":"Quantum computing uses qubits...","output":"It uses qubits..."}
+{"instruction":"Give 3 tips for sleep","input":"","output":"1) Keep a schedule ..."}
+{"instruction":"Write a haiku about stars","input":"","output":"Silent silver sparks..."}
+{"instruction":"Fix grammar","input":"It do not works.","output":"It does not work."}
+{"instruction":"List 5 prime numbers","input":"","output":"2, 3, 5, 7, 11"}
+{"instruction":"Convert to JSON","input":"name=alice,age=30","output":"{\"name\":\"alice\",\"age\":30}"}
+{"instruction":"Explain GPUs in 1 sentence","input":"","output":"GPUs run many small tasks at once..."}
