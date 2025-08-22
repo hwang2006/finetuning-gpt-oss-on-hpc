@@ -28,7 +28,7 @@ Tested on multi‑GPU nodes (A100/H100/H200) with the **PyTorch 2.8.0 • CUDA 1
   - [Streaming & Long Outputs](#streaming--long-outputs)
 - [5) Training](#5-training)
   - [Single-GPU](#single-gpu)
-  - [Multi-GPU](#multi-gpu)
+  - [Multiple GPUs](#multiple-gpus)
   - [Flexible trainer with torchrun](#flexible-trainer-with-torchrun)
   - [SLURM batch template (example)](#slurm-batch-template-example)
 - [6) Upload LoRA Adapter to Hugging Face](#6-upload-lora-adapter-to-hugging-face)
@@ -313,18 +313,19 @@ Examples:
      --gpus 0,1 --multi-gpu 1 --gc 0 --out ./out/dp2-imdb2 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 0
 ```
 
-### Single-GPU 
+### Single GPU 
 
 ```bash
 ./run_train.sh \
   --model Qwen/Qwen2.5-0.5B-Instruct \
   --dataset yahma/alpaca-cleaned \
+  --multi-gpu 0 \
   --out /scratch/$USER/unsloth-out
 ```
 
 *Or use a local JSONL instead of a Hub dataset: `--jsonl /path/data.jsonl`.*
 
-### Multi-GPU 
+### Multiple GPUs 
 
 ```bash
 ./run_train.sh \
