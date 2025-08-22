@@ -359,18 +359,19 @@ Save this as train_llm.sbatch, then submit with sbatch train_llm.sbatch. You can
 
 ```bash
 #!/bin/bash
-#SBATCH -J llm-train                 # Job name (shown by squeue)
-#SBATCH -p amd_a100nv_8              # GPU partition/queue (e.g., gpu, a100, h100)
-##SBATCH -p eme_h200nv_8              # GPU partition/queue (e.g., gpu, a100, h100)
-##SBATCH -p cas_v100nv_8             # GPU partition/queue (e.g., gpu, a100, h100)
-#SBATCH --gpus=2                     # Number of GPUs on this node
-#SBATCH --cpus-per-task=16           # Host CPU threads available to your job
-#SBATCH --mem=0                      # 0 = “all memory on node” (or set a GiB value)
-#SBATCH -t 04:00:00                  # Walltime (HH:MM:SS)
+#SBATCH --comment=tensorflow
+##SBATCH --partition=mig_amd_a100_4
+#SBATCH --partition=amd_a100nv_8
+##SBATCH --partition=eme_h200nv_8
+#SBATCH --time=4:00:00        # walltime
+#SBATCH --nodes=1             # the number of nodes
+#SBATCH --ntasks-per-node=2   # number of tasks per node
+#SBATCH --gres=gpu:2          # number of gpus per node
+#SBATCH --cpus-per-task=8     # number of cpus per task
 #SBATCH -o slurm-%j.out              # Stdout+stderr to file (job ID in name)
 set -euo pipefail
 
-# Always start in the submit directory (keeps relative paths sane)
+# Always start in the repo clone directory (keeps relative paths sane)
 #cd "${SLURM_SUBMIT_DIR}"
 REPO="${REPO:-/scratch/$USER/finetuning-gpt-oss-on-hpc}"
 cd "$REPO" || { echo "[ERR] repo dir not found: $REPO" >&2; exit 1; }
