@@ -422,7 +422,7 @@ sbatch train_llm.sbatch
 - run_train.sh auto-detects visible GPUs and launches torchrun with one process per GPU (via SLURM_GPUS_ON_NODE).
 - To override paths or knobs at submit time:
 ```bash
-sbatch --gpus=4 \
+sbatch --gpus=2 \
   --export=ALL,SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif,VENV=/scratch/$USER/finetuning-gpt-oss-on-hpc/venv \
   train_llm.sbatch
 ```
@@ -432,6 +432,7 @@ tail -f slurm-<jobid>.out
 squeue -u $USER
 ```
 - Outputs (LoRA adapter, tokenizer, logs) land in the --out directory.
+
 ---
 
 ## 6) Upload LoRA Adapter to Hugging Face (inside the container)
