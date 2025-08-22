@@ -355,7 +355,7 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
 
 ### SLURM batch template (example)
 
-Save this as train_llm.sbatch, then submit with sbatch train_llm.sbatch. You can override knobs at submit time using --export=ALL,KEY=VALUE,....
+This script trains on all GPUs allocated to the job by calling the host wrapper run_train.sh (which itself launches the container). Save it as train_llm.sbatch and submit with sbatch train_llm.sbatch.
 
 ```bash
 #!/bin/bash
@@ -368,155 +368,70 @@ Save this as train_llm.sbatch, then submit with sbatch train_llm.sbatch. You can
 #SBATCH --ntasks-per-node=2   # number of tasks per node
 #SBATCH --gres=gpu:2          # number of gpus per node
 #SBATCH --cpus-per-task=8     # number of cpus per task
-#SBATCH -o slurm-%j.out              # Stdout+stderr to file (job ID in name)
+#SBATCH -o slurm-%j.out       # Stdout+stderr to file (job ID in name)
+
 set -euo pipefail
 
-# Always start in the repo clone directory (keeps relative paths sane)
-#cd "${SLURM_SUBMIT_DIR}"
-REPO="${REPO:-/scratch/$USER/finetuning-gpt-oss-on-hpc}"
-cd "$REPO" || { echo "[ERR] repo dir not found: $REPO" >&2; exit 1; }
+# (Optional) load the module so the *host* has `singularity` in PATH
+#module load singularity/4.1.0 2>/dev/null || true
 
-# -----------------------------------------------------------------------------
-# Paths to your container & venv. These are safe defaults; override at submit
-# time with:   sbatch --export=ALL,SIF=/path/to.sif,VENV=/path/to/venv ... file.sbatch
-# -----------------------------------------------------------------------------
+# Repo + paths (host-side)
+REPO="${REPO:-/scratch/$USER/finetuning-gpt-oss-on-hpc}"
 SIF="${SIF:-/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif}"
 VENV="${VENV:-/scratch/$USER/finetuning-gpt-oss-on-hpc/venv}"
 
-# Quick sanity check (fail early if container missing)
-[[ -s "$SIF" ]] || { echo "[ERR] SIF not found: $SIF" >&2; exit 1; }
+cd "$REPO"
 
-# -----------------------------------------------------------------------------
-# Cache dirs on fast scratch (HIGHLY recommended on HPC)
-# You can override any of these with --export=ALL,HF_HOME=/path,... at submit.
-# -----------------------------------------------------------------------------
-export HF_HOME="${HF_HOME:-/scratch/$USER/.huggingface}"
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/scratch/$USER/.cache}"
-export PIP_CACHE_DIR="${PIP_CACHE_DIR:-/scratch/$USER/.cache/pip}"
-export TMPDIR="${TMPDIR:-/scratch/$USER/tmp}"
+# Fast caches on scratch (visible to host and bind-mounted into container)
+export HF_HOME=${HF_HOME:-/scratch/$USER/.huggingface}
+export XDG_CACHE_HOME=${XDG_CACHE_HOME:-/scratch/$USER/.cache}
+export PIP_CACHE_DIR=${PIP_CACHE_DIR:-/scratch/$USER/.cache/pip}
+export TMPDIR=${TMPDIR:-/scratch/$USER/tmp}
 mkdir -p "$HF_HOME" "$XDG_CACHE_HOME" "$PIP_CACHE_DIR" "$TMPDIR"
 
-# Locale & memory behavior (avoids noisy warnings & OOM fragmentation)
-export LC_ALL=C.UTF-8
-export LANG=C.UTF-8
+# Minimal locale + tokenizer noise
+export LC_ALL=C LANG=C
 export TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-
-# Optional: Faster HF transfers on fat pipes (requires extra package in venv)
 export HF_HUB_ENABLE_HF_TRANSFER=1
 
-# -----------------------------------------------------------------------------
-# Training knobs. These are *defaults*; override at submit time with --export.
-# Example:
-#   sbatch --gpus=4 \
-#     --export=ALL,MODEL_ID=Qwen/Qwen2.5-7B-Instruct,DATASET_SPLIT='train[:2%]',EPOCHS=1,PACKING=1 \
-#     train_llm.sbatch
-# -----------------------------------------------------------------------------
-MODEL_ID="${MODEL_ID:-Qwen/Qwen2.5-7B-Instruct}"
+echo "== Node: $(hostname)"
+echo "GPUs requested: ${SLURM_GPUS_ON_NODE:-unset}"
+echo "CUDA_VISIBLE_DEVICES (host): ${CUDA_VISIBLE_DEVICES:-<unset>}"
+echo "Singularity: $(command -v singularity || echo 'not found on host')"
 
-# Use either HF datasets (DATASET + DATASET_SPLIT) *or* a local JSONL (JSONL).
-DATASET="${DATASET:-yahma/alpaca-cleaned}"
-DATASET_SPLIT="${DATASET_SPLIT:-train[:1%]}"   # e.g. 'train', 'train[:2%]', 'train[:1000]'
-JSONL="${JSONL:-}"                              # e.g. /scratch/$USER/data/my_data.jsonl
-
-OUTPUT_DIR="${OUTPUT_DIR:-/scratch/$USER/unsloth-$(date +%Y%m%d-%H%M%S)}"
-
-# Sequence & training config (tune as needed)
-MAX_SEQ_LEN="${MAX_SEQ_LEN:-4096}"
-PACKING="${PACKING:-1}"          # 1=on (padless), 0=off
-USE_4BIT="${USE_4BIT:-1}"        # 1=QLoRA, 0=full precision (if VRAM allows)
-BATCH_SIZE="${BATCH_SIZE:-1}"    # per-GPU microbatch
-GRAD_ACCUM="${GRAD_ACCUM:-16}"   # effective global batch = bs * ga * num_gpus
-EPOCHS="${EPOCHS:-1}"            # can be float (e.g., 0.3)
-LR="${LR:-1e-4}"
-LOG_STEPS="${LOG_STEPS:-10}"
-SAVE_STEPS="${SAVE_STEPS:-500}"
-
-echo "== SLURM node ======================================"
-echo "Host:        $(hostname)"
-echo "GPUs asked:  ${SLURM_GPUS_ON_NODE:-unset}"
-echo "CUDA vis:    ${CUDA_VISIBLE_DEVICES:-<inherited by SLURM>}"
-echo "SIF:         $SIF"
-echo "VENV:        $VENV"
-echo "OUTPUT_DIR:  $OUTPUT_DIR"
-echo "====================================================="
-
-# -----------------------------------------------------------------------------
-# Run training *inside* the container.
-# Notes:
-#  - We DO NOT pass --cleanenv so SLURM’s CUDA_VISIBLE_DEVICES is preserved.
-#  - run_train.sh will detect multi-GPU and launch torchrun with
-#    --nproc_per_node=$SLURM_GPUS_ON_NODE (i.e., one process per GPU).
-#  - If your site doesn’t auto-export CUDA_VISIBLE_DEVICES, you may pass
-#    --gpus "0,1,...,N" to run_train.sh explicitly.
-# -----------------------------------------------------------------------------
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc "
-  set -euo pipefail
-  source '$VENV/bin/activate'
-
-  # Optional in-container GPU sanity (uncomment to debug GPU visibility)
-  # nvidia-smi || true
-  # python - <<'PY'
-  # import os, torch
-  # print('CUDA_VISIBLE_DEVICES=', os.environ.get('CUDA_VISIBLE_DEVICES'))
-  # print('cuda.is_available=', torch.cuda.is_available())
-  # print('device_count=', torch.cuda.device_count())
-  # if torch.cuda.is_available():
-  #   print('names=', [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())])
-  # PY
-
-  if [[ -n '$JSONL' ]]; then
-    ./run_train.sh \
-      --sif '$SIF' --venv '$VENV' \
-      --model '$MODEL_ID' \
-      --jsonl '$JSONL' \
-      --out  '$OUTPUT_DIR' \
-      --multi-gpu 1 \
-      --max-seq-len '$MAX_SEQ_LEN' --packing '$PACKING' --4bit '$USE_4BIT' \
-      --bs '$BATCH_SIZE' --ga '$GRAD_ACCUM' --epochs '$EPOCHS' --lr '$LR' \
-      --log-steps '$LOG_STEPS' --save-steps '$SAVE_STEPS'
-  else
-    ./run_train.sh \
-      --sif '$SIF' --venv '$VENV' \
-      --model '$MODEL_ID' \
-      --dataset '$DATASET' --split '$DATASET_SPLIT' \
-      --out  '$OUTPUT_DIR' \
-      --multi-gpu 1 \
-      --max-seq-len '$MAX_SEQ_LEN' --packing '$PACKING' --4bit '$USE_4BIT' \
-      --bs '$BATCH_SIZE' --ga '$GRAD_ACCUM' --epochs '$EPOCHS' --lr '$LR' \
-      --log-steps '$LOG_STEPS' --save-steps '$SAVE_STEPS'
-  fi
-"
-
-# -----------------------------------------------------------------------------
-# Tips:
-#  * Submit:   sbatch train_llm.sbatch
-#  * Override: sbatch --gpus=4 \
-#                --export=ALL,MODEL_ID=Qwen/Qwen2.5-7B-Instruct,DATASET_SPLIT='train[:2%]',EPOCHS=1 \
-#                train_llm.sbatch
-#  * Local JSONL:
-#              sbatch --gpus=2 \
-#                --export=ALL,JSONL=/scratch/$USER/data/my_data.jsonl,PACKING=0 \
-#                train_llm.sbatch
-#  * Logs end up in slurm-<jobid>.out (see #SBATCH -o)
-# -----------------------------------------------------------------------------
+# Call the host-side wrapper (it will `singularity exec` for you)
+./run_train.sh \
+  --sif "$SIF" \
+  --venv "$VENV" \
+  --model Qwen/Qwen2.5-7B-Instruct \
+  --dataset yahma/alpaca-cleaned --split 'train[:1%]' \
+  --out "$REPO/unsloth-out-7b" \
+  --multi-gpu 1 \
+  --max-seq-len 4096 --packing 1 --4bit 1 \
+  --bs 1 --ga 16 --epochs 1 --lr 1e-4 \
+  --log-steps 10 --save-steps 500
 ```
 
 ### Quick submits
-
-#### Alpaca 1% on 2 GPUs
 ```bash
-sbatch --gpus=2 \
-  --export=ALL,MODEL_ID=Qwen/Qwen2.5-7B-Instruct,DATASET=yahma/alpaca-cleaned,DATASET_SPLIT='train[:1%]',PACKING=1,USE_4BIT=1 \
-  train_llm.sbatch
+sbatch train_llm.sbatch
 ```
 
-#### Train from a local JSONL
+### Notes
+- run_train.sh auto-detects visible GPUs and launches torchrun with one process per GPU (via SLURM_GPUS_ON_NODE).
+- To override paths or knobs at submit time:
 ```bash
-sbatch --gpus=2 \
-  --export=ALL,MODEL_ID=Qwen/Qwen2.5-7B-Instruct,DATASET=yahma/alpaca-cleaned,DATASET_SPLIT='train[:1%]',PACKING=1,USE_4BIT=1 \
+sbatch --gpus=4 \
+  --export=ALL,SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif,VENV=/scratch/$USER/finetuning-gpt-oss-on-hpc/venv \
   train_llm.sbatch
 ```
+- Monitor progress:
+```bash
+tail -f slurm-<jobid>.out
+squeue -u $USER
+```
+- Outputs (LoRA adapter, tokenizer, logs) land in the --out directory.
 ---
 
 ## 6) Upload LoRA Adapter to Hugging Face (inside the container)
