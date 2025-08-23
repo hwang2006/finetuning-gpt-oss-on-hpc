@@ -105,6 +105,7 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
 export REPO=/scratch/$USER/finetuning-gpt-oss-on-hpc
 export VENV="$REPO/venv"
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
+export SIF=/scratch/$USER/sifs/pytorch_25.06.sif
 
 # (Recommended) set caches to scratch and enable HF accelerated transfers
 export HF_HOME=/scratch/$USER/.huggingface
