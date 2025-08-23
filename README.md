@@ -345,6 +345,7 @@ Examples:
   --model Qwen/Qwen2.5-0.5B-Instruct \
   --dataset yahma/alpaca-cleaned \
   --multi-gpu 0 \
+  --split "train[:2%]"
   --out "$REPO/unsloth-out"
 ```
 
@@ -357,6 +358,7 @@ Examples:
   --model Qwen/Qwen2.5-7B-Instruct \
   --dataset yahma/alpaca-cleaned \
   --multi-gpu 1 \
+  --epochs 0.1
   --out "$REPO/unsloth-out-7b"
 ```
 
