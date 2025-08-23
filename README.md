@@ -345,7 +345,7 @@ Examples:
   --model Qwen/Qwen2.5-0.5B-Instruct \
   --dataset yahma/alpaca-cleaned \
   --multi-gpu 0 \
-  --out /scratch/$USER/unsloth-out
+  --out "$REPO/unsloth-out"
 ```
 
 *Or use a local JSONL instead of a Hub dataset: `--jsonl /path/data.jsonl`.*
