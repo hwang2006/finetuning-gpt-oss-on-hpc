@@ -216,10 +216,6 @@ COMMON_ENV=(
   "SINGULARITYENV_TOKENIZERS_PARALLELISM=false"
   "SINGULARITYENV_OMP_NUM_THREADS=1"
 
-  # (Optional stability toggles — uncomment if needed)
-  # "SINGULARITYENV_NCCL_ASYNC_ERROR_HANDLING=1"
-  # "SINGULARITYENV_TORCH_NCCL_BLOCKING_WAIT=1"
-
   # Model / Output
   "SINGULARITYENV_MODEL_ID=$MODEL_ID"
   "SINGULARITYENV_OUTPUT_DIR=$OUTPUT_DIR"
@@ -294,6 +290,14 @@ if need:
   import sys, subprocess
   subprocess.check_call([sys.executable,'-m','pip','install','-q',*need])
 PY
+  fi
+
+  # --- Require flash-attn when single-process + packing=1 ---
+  HAS_FA2=\$(python -c 'import importlib.util; print(1 if importlib.util.find_spec(\"flash_attn\") else 0)' 2>/dev/null || echo 0)
+  : \"\${HAS_FA2:=0}\"
+  if [ '$MULTI_GPU' = '0' ] && [ \"\$PACKING\" = '1' ] && [ \"\$HAS_FA2\" = '0' ]; then
+    echo '[WARN] PACKING=1 requested but flash-attn not installed; forcing PACKING=0 for single-process run.'
+    export PACKING=0
   fi
 
   echo '[INFO] Training starting on GPUs:' \${CUDA_VISIBLE_DEVICES:-unset}
