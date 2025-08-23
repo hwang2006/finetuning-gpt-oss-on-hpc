@@ -130,6 +130,28 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
 export HF_HUB_ENABLE_HF_TRANSFER=1
 ```
 
+```bash
+singularity exec --nv "$SIF" bash -lc '
+  set -e
+  python3 -V
+  python3 -m venv --system-site-packages "'"$VENV"'"
+  source "'"$VENV"'/bin/activate"
+  pip install -q --upgrade pip
+  # Unsloth + zoo 
+  pip install  \
+    "unsloth_zoo[base] @ git+https://github.com/unslothai/unsloth-zoo" \
+    "unsloth[base] @ git+https://github.com/unslothai/unsloth.git" \
+    bitsandbytes \
+    git+https://github.com/huggingface/transformers \
+    git+https://github.com/triton-lang/triton.git@main#subdirectory=python/triton_kernels
+  # Optional: faster Hub I/O
+  pip install -q "huggingface_hub[hf_transfer]>=0.24.0"
+  echo "✅ venv ready @ '"$VENV"'"
+'
+# Optional: enable accelerated Hub transfers globally
+export HF_HUB_ENABLE_HF_TRANSFER=1
+```
+
 **Notes**
 - If your site has strict egress, pre‑stage models into `$HF_HOME` or mirror them internally.
 - If PyPI versions drift, you can fall back to Git installs (inside the container):
