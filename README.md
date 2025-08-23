@@ -134,12 +134,14 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 singularity exec --nv "$SIF" bash -lc '
   set -e
   python3 -V
-  python3 -m venv --system-site-packages "'"$VENV"'"
+  # python3 -m venv --system-site-packages "'"$VENV"'"
+  python3 -m venv "'"$VENV"'"
   source "'"$VENV"'/bin/activate"
   pip install -q --upgrade pip
+  try: import numpy; install_numpy = f"numpy=={numpy.__version__}"
+  except: install_numpy = "numpy"
   # Unsloth + zoo 
   pip install  \
-    "unsloth_zoo[base] @ git+https://github.com/unslothai/unsloth-zoo" \
     "unsloth[base] @ git+https://github.com/unslothai/unsloth.git" \
     bitsandbytes \
     git+https://github.com/huggingface/transformers \
