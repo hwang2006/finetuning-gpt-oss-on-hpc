@@ -253,7 +253,7 @@ Notes:
 ```bash
 # Stream tokens as they generate
 ./run_infer.sh \
-  --model Qwen/Qwen2.5-7B-Instruct \
+  --model openai/gpt-oss-20b \
   --stream 1 \
   --max-new 1200 --max-seq-len 8192 \
   --system "You write long-form, comprehensive answers." \
