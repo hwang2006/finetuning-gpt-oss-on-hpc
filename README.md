@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![CUDA 12.9](https://img.shields.io/badge/CUDA-12.9-brightgreen.svg)]()
-[![Singularity](https://img.shields.io/badge/Container-Singularity%2FApptainer-indigo.svg)]()
+[![Singularity](https://img.shields.io/badge/Container-Singularity-indigo.svg)](https://docs.sylabs.io/guides/3.5/user-guide/introduction.html)
 [![Unsloth](https://img.shields.io/badge/Unsloth-2025.x-orange.svg)](https://github.com/unslothai/unsloth)
 
 This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OSS and similar HF models on HPC systems** using **[Unsloth](https://github.com/unslothai/unsloth) inside Singularity/Apptainer containers**.  
