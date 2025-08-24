@@ -414,7 +414,7 @@ echo "Singularity: $(command -v singularity || echo 'not found on host')"
   --sif "$SIF" \
   --venv "$VENV" \
   --model openai/gpt-oss-20b \
-  --dataset yahma/alpaca-cleaned --split 'train[:5%]' \
+  --dataset yahma/alpaca-cleaned --split 'train[:2%]' \
   --out "$REPO/unsloth-out-20b" \
   --multi-gpu 1 \
   --max-seq-len 4096 --packing 1 --4bit 1 \
