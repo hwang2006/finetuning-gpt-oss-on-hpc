@@ -471,7 +471,7 @@ tail -f slurm-<jobid>.out
 # Where your adapter was saved and your target repo
 export REPO=/scratch/$USER/finetuning-gpt-oss-on-hpc
 export ADAPTER_DIR="$REPO/unsloth-out-20b"
-export REPO_ID=hwang2006/qwen2.5-7b-alpaca-1pct-lora   # <your-username>/<repo-name>
+export REPO_ID=hwang2006/gpt-oss-20b-alpaca-2pct-lora   # <your-username>/<repo-name>
 export HF_TOKEN=hf_********************************    # a token with "Write" scope
 export VENV="$REPO/venv"
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
