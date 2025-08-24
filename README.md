@@ -4,12 +4,14 @@
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![CUDA 12.9](https://img.shields.io/badge/CUDA-12.9-brightgreen.svg)]()
 [![Singularity](https://img.shields.io/badge/Container-Singularity%2FApptainer-indigo.svg)]()
+[![Unsloth](https://img.shields.io/badge/Unsloth-2025.x-orange.svg)](https://github.com/unslothai/unsloth)
 
-This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT-OSS and similar HF models on HPC systems** using **Singularity/Apptainer only**. All steps (env setup, inference, training, and uploading to Hugging Face) run **inside the container**.
+This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OSS and similar HF models on HPC systems** using **[Unsloth](https://github.com/unslothai/unsloth) inside Singularity/Apptainer containers**.  
+All steps (env setup, inference, training, and uploading to Hugging Face) run **inside the container**.
 
 > Works with **Singularity _or_ Apptainer**. On many clusters, `singularity` is a symlink to Apptainer—commands below work unchanged.
 
-Tested on multi-GPU nodes (A100/H100/H200) with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
+Tested on multi‑GPU nodes (A100/H100/H200) with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
 
 **Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>
 
@@ -169,6 +171,8 @@ unsloth_zoo              2025.8.8
 # Optional: enable accelerated Hub transfers globally
 export HF_HUB_ENABLE_HF_TRANSFER=1
 ```
+
+> **Note:** Import **Unsloth first**, then `torch`/`transformers`. This ensures proper Triton patching.
 
 ---
 
