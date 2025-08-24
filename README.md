@@ -439,7 +439,8 @@ echo "Singularity: $(command -v singularity || echo 'not found on host')"
   --multi-gpu 1 \
   --max-seq-len 4096 --packing 1 --4bit 1 \
   --bs 1 --ga 16 --epochs 1 --lr 1e-4 \
-  --log-steps 10 --save-steps 500
+  --log-steps 10 --save-steps 500 \
+  --out "$REPO/unsloth-out-20b"
 ```
 
 ### Quick submits
