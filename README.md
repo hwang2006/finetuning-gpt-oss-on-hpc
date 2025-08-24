@@ -134,16 +134,14 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 singularity exec --nv "$SIF" bash -lc '
   set -e
   python3 -V
-  # python3 -m venv --system-site-packages "'"$VENV"'"
   python3 -m venv "'"$VENV"'"
   source "'"$VENV"'/bin/activate"
   pip install -q --upgrade pip
-  try: import numpy; install_numpy = f"numpy=={numpy.__version__}"
-  except: install_numpy = "numpy"
-  # Unsloth + zoo 
-  pip install  \
+  pip install -q \
+    "torch>=2.8.0" "triton>=3.4.0" numpy  \
+    "unsloth_zoo[base] @ git+https://github.com/unslothai/unsloth-zoo" \
     "unsloth[base] @ git+https://github.com/unslothai/unsloth.git" \
-    bitsandbytes \
+    torchvision bitsandbytes \
     git+https://github.com/huggingface/transformers \
     git+https://github.com/triton-lang/triton.git@main#subdirectory=python/triton_kernels
   # Optional: faster Hub I/O
