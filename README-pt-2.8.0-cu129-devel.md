@@ -33,11 +33,25 @@ mkdir -p "$REPO_DIR" "/tmp/$USER"
 
 ## 1) Create a writable sandbox from the Docker base
 ```bash
-singularity build --fakeroot --sandbox "$WORK_SANDBOX" \
+singularity build --sandbox "$WORK_SANDBOX" \
   docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+INFO:    Starting build...
+INFO:    Fetching OCI image...
+28.2MiB / 28.2MiB [====================================================] 100 % 0.0 b/s 0s
+86.9KiB / 86.9KiB [====================================================] 100 % 0.0 b/s 0s
+2.1GiB / 2.1GiB [======================================================] 100 % 0.0 b/s 0s
+4.4MiB / 4.4MiB [======================================================] 100 % 0.0 b/s 0s
+98.7MiB / 98.7MiB [====================================================] 100 % 0.0 b/s 0s
+894.8KiB / 894.8KiB [==================================================] 100 % 0.0 b/s 0s
+4.4GiB / 4.4GiB [======================================================] 100 % 0.0 b/s 0s
+3.0GiB / 3.0GiB [======================================================] 100 % 0.0 b/s 0s
+INFO:    Extracting OCI image...
+2025/08/24 22:14:31  warn xattr{var/log/apt/term.log} ignoring ENOTSUP on setxattr "user.rootlesscontainers"
+2025/08/24 22:14:31  warn xattr{/scratch/qualis/sifs/build-temp-595229858/rootfs/var/log/apt/term.log} destination filesystem does not support xattrs, further warnings will be suppressed
+INFO:    Inserting Singularity configuration...
+INFO:    Creating sandbox directory...
+INFO:    Build complete: /scratch/qualis/sifs/pt-2.8.0-cu129-devel
 ```
-
-> If `--fakeroot` isn’t available, you’ll need root privileges or request it from your admin.
 
 ---
 
@@ -46,6 +60,12 @@ singularity build --fakeroot --sandbox "$WORK_SANDBOX" \
 Enter the sandbox:
 ```bash
 singularity shell --writable --fakeroot "$WORK_SANDBOX"
+WARNING: Skipping mount /scratch [binds]: /scratch doesn't exist in container
+WARNING: Skipping mount /home01 [binds]: /home01 doesn't exist in container
+WARNING: Skipping mount /apps [binds]: /apps doesn't exist in container
+WARNING: Skipping mount /etc/localtime [binds]: /etc/localtime doesn't exist in container
+bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8)
+Singularity>
 ```
 
 Inside the container, install extra tools and set locale/timezone:
