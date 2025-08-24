@@ -518,8 +518,8 @@ This script:
 
 ```bash
 ./run_infer.sh \
-  --adapter "$REPO/unsloth-out-7b" \
-  --base-model Qwen/Qwen2.5-7B-Instruct \
+  --adapter "$REPO/unsloth-out-20b" \
+  --base-model openai/gpt-oss-20b \
   --load-in-4bit 1 --stream 1 \
   --user "Write a short, friendly paragraph about learning Python."
 ```
@@ -528,8 +528,8 @@ This script:
 
 ```bash
 ./run_infer.sh \
-  --adapter "hwang2006/qwen2.5-7b-alpaca-1pct-lora" \
-  --base-model Qwen/Qwen2.5-7B-Instruct \
+  --adapter "hwang2006/gpt-oss-20b-alpaca-2pct-lora" \
+  --base-model openai/gpt-oss-20b \
   --load-in-4bit 1 --stream 1 \
   --user "Suggest a heartwarming film and explain why in one sentence."
 ```
