@@ -484,10 +484,10 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
     --adapter-dir "'"$ADAPTER_DIR"'" \
     --repo-id "'"$REPO_ID"'" \
     --token "'"$HF_TOKEN"'" \
-    --base-model Qwen/Qwen2.5-7B-Instruct \
+    --base-model openai/gpt-oss-20b \
     --datasets yahma/alpaca-cleaned \
     --language en \
-    --tags lora,unsloth,peft,qwen,instruction-tuning \
+    --tags lora,unsloth,peft,gpt-oss,fine-tuning \
     --ignore checkpoint-* \
     --license apache-2.0
 '
