@@ -456,8 +456,7 @@ export HF_TOKEN=hf_********************************    # a token with "Write" sc
 export VENV="$REPO/venv"
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
-  export LC_ALL=C.UTF-8 LANG=C.UTF-8
+singularity exec --nv "$SIF" bash -lc '
   source "'"$VENV"'/bin/activate"
   pip install -q "huggingface_hub[hf_transfer]>=0.24.0"
   python upload_lora_to_hf.py \
