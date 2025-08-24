@@ -351,8 +351,7 @@ Use the flexible trainer (`train_unsloth_flex.py`) directly if you want for more
 
 ```bash
 # Example: Qwen 7B, Alpaca 1% split, 2 GPUs data parallel
-singularity exec --nv --cleanenv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
-  export LC_ALL=C.UTF-8 LANG=C.UTF-8
+singularity exec --nv --cleanenv  "$SIF" bash -lc '
   source "'"$VENV"'/bin/activate"
   MODEL_ID="Qwen/Qwen2.5-7B-Instruct" \
   DATASET="yahma/alpaca-cleaned" DATASET_SPLIT="train[:2%]" \
