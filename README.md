@@ -370,8 +370,7 @@ This script trains on all GPUs allocated to the job by calling the host wrapper 
 
 ```bash
 #!/bin/bash
-#SBATCH --comment=tensorflow
-##SBATCH --partition=mig_amd_a100_4
+#SBATCH --comment=pytorch
 #SBATCH --partition=amd_a100nv_8
 ##SBATCH --partition=eme_h200nv_8
 #SBATCH --time=4:00:00        # walltime
@@ -401,7 +400,6 @@ export TMPDIR=${TMPDIR:-/scratch/$USER/tmp}
 mkdir -p "$HF_HOME" "$XDG_CACHE_HOME" "$PIP_CACHE_DIR" "$TMPDIR"
 
 # Minimal locale + tokenizer noise
-export LC_ALL=C LANG=C
 export TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export HF_HUB_ENABLE_HF_TRANSFER=1
