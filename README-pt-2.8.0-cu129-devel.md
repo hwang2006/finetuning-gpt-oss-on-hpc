@@ -70,28 +70,213 @@ Singularity>
 
 Inside the container, install extra tools and set locale/timezone:
 ```bash
-set -e
+Singularity> set -e
 
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
   git curl wget ca-certificates locales tzdata
+Get:1 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64  InRelease [1581 B]
+Get:2 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64  Packages [1939 kB]
+Get:3 http://security.ubuntu.com/ubuntu jammy-security InRelease [129 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy InRelease [270 kB]
+Get:5 http://security.ubuntu.com/ubuntu jammy-security/multiverse amd64 Packages [48.5 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
+Get:7 http://security.ubuntu.com/ubuntu jammy-security/universe amd64 Packages [1271 kB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy-backports InRelease [127 kB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy/restricted amd64 Packages [164 kB]
+Get:10 http://archive.ubuntu.com/ubuntu jammy/main amd64 Packages [1792 kB]
+Get:11 http://security.ubuntu.com/ubuntu jammy-security/main amd64 Packages [3253 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy/multiverse amd64 Packages [266 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy/universe amd64 Packages [17.5 MB]
+Get:14 http://security.ubuntu.com/ubuntu jammy-security/restricted amd64 Packages [5235 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 Packages [75.9 kB]
+Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 Packages [1575 kB]
+Get:17 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 Packages [5430 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [3569 kB]
+Get:19 http://archive.ubuntu.com/ubuntu jammy-backports/universe amd64 Packages [35.2 kB]
+Get:20 http://archive.ubuntu.com/ubuntu jammy-backports/main amd64 Packages [83.2 kB]
+Fetched 42.9 MB in 5s (8609 kB/s)
+Reading package lists... Done
+W: Download is performed unsandboxed as root as file '/var/lib/apt/lists/partial/archive.ubuntu.com_ubuntu_dists_jammy_InRelease' couldn't be accessed by user '_apt'. - pkgAcquire::Run (13: Permission denied)
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+ca-certificates is already the newest version (20240203~22.04.1).
+The following additional packages will be installed:
+  git-man libbrotli1 libcurl3-gnutls libcurl4 liberror-perl libexpat1 libnghttp2-14
+  libpsl5 librtmp1 libssh-4
+Suggested packages:
+  gettext-base git-daemon-run | git-daemon-sysvinit git-doc git-email git-gui gitk
+  gitweb git-cvs git-mediawiki git-svn
+Recommended packages:
+  less ssh-client publicsuffix
+The following NEW packages will be installed:
+  curl git git-man libbrotli1 libcurl3-gnutls libcurl4 liberror-perl libexpat1
+  libnghttp2-14 libpsl5 librtmp1 libssh-4 locales tzdata wget
+0 upgraded, 15 newly installed, 0 to remove and 27 not upgraded.
+Need to get 10.6 MB of archives.
+After this operation, 47.7 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libexpat1 amd64 2.4.7-1ubuntu0.6 [92.1 kB]
+Get:2 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 locales all 2.35-0ubuntu3.10 [4248 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 tzdata all 2025b-0ubuntu0.22.04.1 [347 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libnghttp2-14 amd64 1.43.0-1ubuntu0.2 [76.9 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy/main amd64 libpsl5 amd64 0.21.0-1.2build2 [58.4 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 wget amd64 1.21.2-2ubuntu1.1 [339 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy/main amd64 libbrotli1 amd64 1.0.9-2build6 [315 kB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2build4 [58.2 kB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libssh-4 amd64 0.9.6-2ubuntu0.22.04.4 [187 kB]
+Get:10 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcurl4 amd64 7.81.0-1ubuntu1.20 [289 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 curl amd64 7.81.0-1ubuntu1.20 [194 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcurl3-gnutls amd64 7.81.0-1ubuntu1.20 [284 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy/main amd64 liberror-perl all 0.17029-1 [26.5 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git-man all 1:2.34.1-1ubuntu1.15 [955 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git amd64 1:2.34.1-1ubuntu1.15 [3166 kB]
+Fetched 10.6 MB in 4s (2653 kB/s)
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = "en_US.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package libexpat1:amd64.
+(Reading database ... 15182 files and directories currently installed.)
+Preparing to unpack .../00-libexpat1_2.4.7-1ubuntu0.6_amd64.deb ...
+Unpacking libexpat1:amd64 (2.4.7-1ubuntu0.6) ...
+Selecting previously unselected package locales.
+Preparing to unpack .../01-locales_2.35-0ubuntu3.10_all.deb ...
+Unpacking locales (2.35-0ubuntu3.10) ...
+Selecting previously unselected package tzdata.
+Preparing to unpack .../02-tzdata_2025b-0ubuntu0.22.04.1_all.deb ...
+Unpacking tzdata (2025b-0ubuntu0.22.04.1) ...
+Selecting previously unselected package libnghttp2-14:amd64.
+Preparing to unpack .../03-libnghttp2-14_1.43.0-1ubuntu0.2_amd64.deb ...
+Unpacking libnghttp2-14:amd64 (1.43.0-1ubuntu0.2) ...
+Selecting previously unselected package libpsl5:amd64.
+Preparing to unpack .../04-libpsl5_0.21.0-1.2build2_amd64.deb ...
+Unpacking libpsl5:amd64 (0.21.0-1.2build2) ...
+Selecting previously unselected package wget.
+Preparing to unpack .../05-wget_1.21.2-2ubuntu1.1_amd64.deb ...
+Unpacking wget (1.21.2-2ubuntu1.1) ...
+Selecting previously unselected package libbrotli1:amd64.
+Preparing to unpack .../06-libbrotli1_1.0.9-2build6_amd64.deb ...
+Unpacking libbrotli1:amd64 (1.0.9-2build6) ...
+Selecting previously unselected package librtmp1:amd64.
+Preparing to unpack .../07-librtmp1_2.4+20151223.gitfa8646d.1-2build4_amd64.deb ...
+Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+Selecting previously unselected package libssh-4:amd64.
+Preparing to unpack .../08-libssh-4_0.9.6-2ubuntu0.22.04.4_amd64.deb ...
+Unpacking libssh-4:amd64 (0.9.6-2ubuntu0.22.04.4) ...
+Selecting previously unselected package libcurl4:amd64.
+Preparing to unpack .../09-libcurl4_7.81.0-1ubuntu1.20_amd64.deb ...
+Unpacking libcurl4:amd64 (7.81.0-1ubuntu1.20) ...
+Selecting previously unselected package curl.
+Preparing to unpack .../10-curl_7.81.0-1ubuntu1.20_amd64.deb ...
+Unpacking curl (7.81.0-1ubuntu1.20) ...
+Selecting previously unselected package libcurl3-gnutls:amd64.
+Preparing to unpack .../11-libcurl3-gnutls_7.81.0-1ubuntu1.20_amd64.deb ...
+Unpacking libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.20) ...
+Selecting previously unselected package liberror-perl.
+Preparing to unpack .../12-liberror-perl_0.17029-1_all.deb ...
+Unpacking liberror-perl (0.17029-1) ...
+Selecting previously unselected package git-man.
+Preparing to unpack .../13-git-man_1%3a2.34.1-1ubuntu1.15_all.deb ...
+Unpacking git-man (1:2.34.1-1ubuntu1.15) ...
+Selecting previously unselected package git.
+Preparing to unpack .../14-git_1%3a2.34.1-1ubuntu1.15_amd64.deb ...
+Unpacking git (1:2.34.1-1ubuntu1.15) ...
+Setting up libexpat1:amd64 (2.4.7-1ubuntu0.6) ...
+Setting up libpsl5:amd64 (0.21.0-1.2build2) ...
+Setting up wget (1.21.2-2ubuntu1.1) ...
+Setting up libbrotli1:amd64 (1.0.9-2build6) ...
+Setting up libnghttp2-14:amd64 (1.43.0-1ubuntu0.2) ...
+Setting up locales (2.35-0ubuntu3.10) ...
+Generating locales (this might take a while)...
+Generation complete.
+Setting up tzdata (2025b-0ubuntu0.22.04.1) ...
+
+Current default time zone: 'Etc/UTC'
+Local time is now:      Sun Aug 24 13:24:23 UTC 2025.
+Universal Time is now:  Sun Aug 24 13:24:23 UTC 2025.
+Run 'dpkg-reconfigure tzdata' if you wish to change it.
+
+Setting up liberror-perl (0.17029-1) ...
+Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+Setting up libssh-4:amd64 (0.9.6-2ubuntu0.22.04.4) ...
+Setting up libcurl4:amd64 (7.81.0-1ubuntu1.20) ...
+Setting up git-man (1:2.34.1-1ubuntu1.15) ...
+Setting up curl (7.81.0-1ubuntu1.20) ...
+Setting up libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.20) ...
+Setting up git (1:2.34.1-1ubuntu1.15) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.10) ...
+W: Download is performed unsandboxed as root as file '/var/cache/apt/archives/partial/libexpat1_2.4.7-1ubuntu0.6_amd64.deb' couldn't be accessed by user '_apt'. - pkgAcquire::Run (13: Permission denied)
 
 # Enable & generate en_US.UTF-8 locale (safe default for UTF-8)
-sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
-locale-gen en_US.UTF-8
-update-locale LANG=en_US.UTF-8 LANGUAGE=en_US:en
+Singularity> sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+Singularity> locale-gen en_US.UTF-8
+Singularity> update-locale LANG=en_US.UTF-8 LANGUAGE=en_US:en
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+        LANGUAGE = (unset),
+        LC_ALL = "en_US.UTF-8",
+        LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+*** update-locale: Error: invalid locale settings:  LANG=en_US.UTF-8 LANGUAGE=en_US:en
+Singularity> unset LC_ALL
+Singularity> unset LANGUAGE
+Singularity> export LANG=C.UTF-8
+Singularity> rm -f /etc/profile.d/locale.sh
+Singularity> sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+Singularity> locale-gen en_US.UTF-8
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
+Singularity> cat > /etc/default/locale <<'EOF'
+LANG=en_US.UTF-8
+LANGUAGE=en_US:en
+EOF
+Singularity> LC_ALL=C locale -a | grep -i 'en_US\|c\.utf'
+C.utf8
+en_US.utf8
+Singularity> exit
+exit
+
+# Re-enter and confirm
+singularity shell --writable --fakeroot /scratch/$USER/sifs/pt-2.8.0-cu129-devel
+WARNING: Skipping mount /scratch [binds]: /scratch doesn't exist in container
+WARNING: Skipping mount /home01 [binds]: /home01 doesn't exist in container
+WARNING: Skipping mount /apps [binds]: /apps doesn't exist in container
+Singularity> locale
+LANG=en_US.UTF-8
+LANGUAGE=
+LC_CTYPE="en_US.UTF-8"
+LC_NUMERIC="en_US.UTF-8"
+LC_TIME="en_US.UTF-8"
+LC_COLLATE="en_US.UTF-8"
+LC_MONETARY="en_US.UTF-8"
+LC_MESSAGES="en_US.UTF-8"
+LC_PAPER="en_US.UTF-8"
+LC_NAME="en_US.UTF-8"
+LC_ADDRESS="en_US.UTF-8"
+LC_TELEPHONE="en_US.UTF-8"
+LC_MEASUREMENT="en_US.UTF-8"
+LC_IDENTIFICATION="en_US.UTF-8"
+LC_ALL=en_US.UTF-8
 
 # (Optional) set container timezone
-ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+Singularity> ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
 
 # Create common bind mount targets (silences warnings on some clusters)
-mkdir -p /scratch /home01 /apps
+Singularity> mkdir -p /scratch /home01 /apps
 
 # Clean apt caches and lists to avoid _apt permission issues later
-rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*
-mkdir -p /var/cache/apt/archives/partial
-chmod 755 /var/cache/apt/archives/partial
+Singularity> rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/*
+Singularity> mkdir -p /var/cache/apt/archives/partial
+Singularity> chmod 755 /var/cache/apt/archives/partial
 
+Singularity>exit
 exit
 ```
 
