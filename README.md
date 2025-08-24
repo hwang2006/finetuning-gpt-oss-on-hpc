@@ -346,7 +346,7 @@ Examples:
   --dataset yahma/alpaca-cleaned \
   --multi-gpu 0 \
   --split "train[:2%]" \
-  --out "$REPO/unsloth-out-o.5b"
+  --out "$REPO/unsloth-out-0.5b"
 ```
 
 *Or use a local JSONL instead of a Hub dataset: `--jsonl /path/data.jsonl`.*
