@@ -54,7 +54,7 @@ srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
 
 # 1) Pull container (once)
 singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
-  docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+  library://qualis2006/pytorch/pt-2.8.0-cu129-devel:1.0
 
 # 2) Everything below runs IN the container
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
