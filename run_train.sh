@@ -59,18 +59,14 @@ print_help() {
 Usage: $0 [options]
 
 Paths:
-  --sif PATH                 Singularity image (.sif) path
-                             (default: $SIF)
-  --work DIR                 Work dir (venv + pyfile live here)
-                             (default: $WORK)
+  --sif PATH                 Singularity image (.sif) path (default: $SIF)
+  --work DIR                 Work dir (venv + pyfile live here) (default: $WORK)
   --venv DIR                 Python venv path (default: $VENV)
-  --pyfile FILE              Training Python file
-                             (default: $PYFILE)
+  --pyfile FILE              Training Python file (default: $PYFILE)
 
 Model & Output:
   --model ID                 HF model id (default: $MODEL_ID)
-  --out DIR                  Output dir for adapter/tokenizer
-                             (default: $OUTPUT_DIR)
+  --out DIR                  Output dir for adapter/tokenizer (default: $OUTPUT_DIR)
 
 Datasets:
   --dataset NAME             HF dataset name (default: $DATASET)
@@ -81,8 +77,7 @@ Datasets:
   --jsonl-response NAME      JSONL response field (default: $JSONL_RESPONSE_FIELD)
 
 Prompting / Sequence:
-  --system "TEXT"            System prompt used in chat template
-                             (default: "$SYSTEM_PROMPT")
+  --system "TEXT"            System prompt (default: "$SYSTEM_PROMPT")
   --max-seq-len N            Max sequence length (default: $MAX_SEQ_LEN)
   --packing 0|1              Pack short examples (default: $PACKING)
 
@@ -96,7 +91,7 @@ LoRA:
 Training:
   --bs N                     per-device batch size (default: $BATCH_SIZE)
   --ga N                     gradient accumulation steps (default: $GRAD_ACCUM)
-  --epochs F                 number of epochs (float OK) (default: $EPOCHS)
+  --epochs F                 number of epochs (default: $EPOCHS)
   --lr F                     learning rate (default: $LR)
   --warmup F                 warmup ratio (default: $WARMUP_RATIO)
   --wd F                     weight decay (default: $WEIGHT_DECAY)
@@ -107,7 +102,7 @@ Training:
   --bf16 0|1                 enable bf16 if supported (default: $BF16)
   --gc 0|1                   gradient checkpointing (default: $GRADIENT_CHECKPOINTING)
   --workers N                dataset num_proc (default: $NUM_WORKERS)
-  --report STR               reporting: none|wandb|tensorboard (default: $REPORT_TO)
+  --report STR               none|wandb|tensorboard (default: $REPORT_TO)
   --save-limit N             max checkpoints to keep (default: $SAVE_TOTAL_LIMIT)
   --4bit 0|1                 load base in 4-bit (QLoRA) (default: $USE_4BIT)
 
@@ -116,15 +111,9 @@ GPUs:
                              (current: "${GPUS:-<auto>}")
   --multi-gpu 0|1            use torchrun across GPUs (default: $MULTI_GPU)
 
-Examples:
-  # Single GPU, Alpaca 1%, 4-bit + packing
-  $0 --model Qwen/Qwen2.5-0.5B-Instruct --dataset yahma/alpaca-cleaned --split 'train[:1%]' \\
-     --gpus 0 --multi-gpu 0 --out ./out/s1-alpaca1 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 1
-
-  # Two GPUs data parallel (torchrun), IMDB 2%, 4-bit, no packing
-  $0 --model Qwen/Qwen2.5-0.5B-Instruct --dataset imdb --split 'train[:2%]' \\
-     --gpus 0,1 --multi-gpu 1 --gc 0 --out ./out/dp2-imdb2 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 0
-
+Notes:
+  • In multi-GPU mode, this script auto-disables Torch Dynamo/Inductor and Unsloth's
+    fused CE for stability, and auto-disables packing unless Flash-Attn 2 is installed.
 EOF
 }
 
@@ -215,6 +204,11 @@ COMMON_ENV=(
   "SINGULARITYENV_LANG=C.UTF-8"
   "SINGULARITYENV_TOKENIZERS_PARALLELISM=false"
   "SINGULARITYENV_OMP_NUM_THREADS=1"
+  "SINGULARITYENV_PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True"
+
+  # Pass multi-gpu decision & count into the container
+  "SINGULARITYENV_MULTI_GPU=$MULTI_GPU"
+  "SINGULARITYENV_NGPU=$NGPU"
 
   # Model / Output
   "SINGULARITYENV_MODEL_ID=$MODEL_ID"
@@ -264,17 +258,17 @@ COMMON_ENV=(
 env "${COMMON_ENV[@]}" \
 singularity exec --nv --bind /scratch:/scratch "$SIF" bash -lc "
   set -euo pipefail
-  mkdir -p /scratch/$USER/.cache/triton /scratch/$USER/.huggingface /scratch/$USER/tmp '$OUTPUT_DIR'
+  mkdir -p /scratch/$USER/.cache/triton /scratch/$USER/.huggingface /scratch/$USER/tmp \"$OUTPUT_DIR\"
 
   # venv bootstrap
-  if [ ! -x '$VENV/bin/python' ]; then
+  if [ ! -x \"$VENV/bin/python\" ]; then
     echo '[INFO] Creating venv at $VENV ...'
-    python -m venv '$VENV'
-    source '$VENV/bin/activate'
+    python -m venv \"$VENV\"
+    source \"$VENV/bin/activate\"
     python -m pip -q install -U pip
     python -m pip -q install 'unsloth[base]' 'unsloth_zoo[base]' datasets trl
   else
-    source '$VENV/bin/activate'
+    source \"$VENV/bin/activate\"
     python - <<'PY'
 need = []
 try:
@@ -292,20 +286,39 @@ if need:
 PY
   fi
 
-  # --- Require flash-attn when single-process + packing=1 ---
-  HAS_FA2=\$(python -c 'import importlib.util; print(1 if importlib.util.find_spec(\"flash_attn\") else 0)' 2>/dev/null || echo 0)
+  # --- Capability probe: Flash-Attn 2 ---
+  HAS_FA2=\$(python -c 'import importlib.util as u; print(1 if u.find_spec(\"flash_attn\") else 0)' 2>/dev/null || echo 0)
   : \"\${HAS_FA2:=0}\"
-  if [ '$MULTI_GPU' = '0' ] && [ \"\$PACKING\" = '1' ] && [ \"\$HAS_FA2\" = '0' ]; then
-    echo '[WARN] PACKING=1 requested but flash-attn not installed; forcing PACKING=0 for single-process run.'
+
+  # --- DDP safety toggles (fixes Dynamo/FX crash in Unsloth fused CE path) ---
+  if [ \"\${MULTI_GPU:-0}\" = '1' ] && [ \"\${NGPU:-1}\" -ge 2 ]; then
+    export TORCHDYNAMO_DISABLE=1
+    export TORCHINDUCTOR_DISABLE=1
+    export TORCH_COMPILE_DISABLE=1
+    export UNSLOTH_DISABLE_DYNAMO=1
+    export UNSLOTH_ZOO_DISABLE_FUSED_LOSS=1
+    echo '[INFO] Multi-GPU detected -> disabling Dynamo/Inductor and Unsloth fused CE.'
+  fi
+
+  # --- Packing guard: require Flash-Attn 2 in ALL modes ---
+  if [ \"\${PACKING:-0}\" = '1' ] && [ \"\$HAS_FA2\" = '0' ]; then
+    echo '[WARN] PACKING=1 but flash-attn not found; forcing PACKING=0.'
     export PACKING=0
   fi
 
-  echo '[INFO] Training starting on GPUs:' \${CUDA_VISIBLE_DEVICES:-unset}
+  # --- Optional: nicer DDP failure behavior ---
+  export NCCL_ASYNC_ERROR_HANDLING=1
+  export TORCH_NCCL_BLOCKING_WAIT=1
 
-  if [ '$MULTI_GPU' = '1' ] && [ '$NGPU' -ge 2 ]; then
-    torchrun --standalone --nproc_per_node=$NGPU '$PYFILE'
+  echo '[INFO] Training starting on GPUs:' \${CUDA_VISIBLE_DEVICES:-unset}
+  echo \"[INFO] Resolved switches: MULTI_GPU=\${MULTI_GPU:-0} NGPU=\${NGPU:-1} PACKING=\${PACKING:-0} HAS_FA2=\$HAS_FA2 \"
+  echo \"[INFO] Torch/compile disabled? DYNAMO=\${TORCHDYNAMO_DISABLE:-0} INDUCTOR=\${TORCHINDUCTOR_DISABLE:-0} UNSLOTH_FUSED_CE_DISABLED=\${UNSLOTH_ZOO_DISABLE_FUSED_LOSS:-0}\"
+
+  # Launch
+  if [ \"\${MULTI_GPU:-0}\" = '1' ] && [ \"\${NGPU:-1}\" -ge 2 ]; then
+    torchrun --standalone --nproc_per_node=\"\${NGPU}\" \"$PYFILE\"
   else
-    python '$PYFILE'
+    python \"$PYFILE\"
   fi
 "
 
