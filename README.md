@@ -346,7 +346,7 @@ Examples:
   --dataset yahma/alpaca-cleaned \
   --multi-gpu 0 \
   --split "train[:2%]" \
-  --out "$REPO/unsloth-out"
+  --out "$REPO/unsloth-out-o.5b"
 ```
 
 *Or use a local JSONL instead of a Hub dataset: `--jsonl /path/data.jsonl`.*
@@ -373,7 +373,7 @@ singularity exec --nv --cleanenv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" 
   source "'"$VENV"'/bin/activate"
   MODEL_ID="Qwen/Qwen2.5-7B-Instruct" \
   DATASET="yahma/alpaca-cleaned" DATASET_SPLIT="train[:2%]" \
-  OUTPUT_DIR="'"$REPO"'/unsloth-out-7b" \
+  OUTPUT_DIR="'"$REPO"'/unsloth-out-7b-flex" \
   MAX_SEQ_LEN=4096 USE_4BIT=1 PACKING=1 \
   BATCH_SIZE=1 GRAD_ACCUM=16 EPOCHS=1 LR=1e-4 LOG_STEPS=10 SAVE_STEPS=500 \
   torchrun --standalone --nproc_per_node=2 train_unsloth_flex.py
@@ -433,9 +433,9 @@ echo "Singularity: $(command -v singularity || echo 'not found on host')"
 ./run_train.sh \
   --sif "$SIF" \
   --venv "$VENV" \
-  --model Qwen/Qwen2.5-7B-Instruct \
-  --dataset yahma/alpaca-cleaned --split 'train[:1%]' \
-  --out "$REPO/unsloth-out-7b" \
+  --model openai/gpt-oss-20b \
+  --dataset yahma/alpaca-cleaned --split 'train[:5%]' \
+  --out "$REPO/unsloth-out-20b" \
   --multi-gpu 1 \
   --max-seq-len 4096 --packing 1 --4bit 1 \
   --bs 1 --ga 16 --epochs 1 --lr 1e-4 \
