@@ -5,11 +5,11 @@
 [![CUDA 12.9](https://img.shields.io/badge/CUDA-12.9-brightgreen.svg)]()
 [![Singularity](https://img.shields.io/badge/Container-Singularity%2FApptainer-indigo.svg)]()
 
-This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OSS and similar HF models on HPC systems** using **Singularity/Apptainer only**. All steps (env setup, inference, training, and uploading to Hugging Face) run **inside the container**.
+This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT-OSS and similar HF models on HPC systems** using **Singularity/Apptainer only**. All steps (env setup, inference, training, and uploading to Hugging Face) run **inside the container**.
 
 > Works with **Singularity _or_ Apptainer**. On many clusters, `singularity` is a symlink to Apptainer—commands below work unchanged.
 
-Tested on multi‑GPU nodes (A100/H100/H200) with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
+Tested on multi-GPU nodes (A100/H100/H200) with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
 
 **Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>
 
@@ -52,9 +52,8 @@ cd finetuning-gpt-oss-on-hpc
 # (replace <account> and <gpu-partition> for your site)
 srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
 
-# 1) Pull container (once)
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
-  library://qualis2006/pytorch/pt-2.8.0-cu129-devel:1.0
+# 1) Pull container (recommended: Sylabs Cloud, once)
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   library://qualis2006/pytorch/pt-2.8.0-cu129-devel:1.0
 
 # 2) Everything below runs IN the container
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
@@ -82,19 +81,43 @@ singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc 'e
 
 ## 1) Pull the Container
 
+You have **two choices**:  
+
+### Option A — Pull the **prebuilt, signed** image from Sylabs Cloud (recommended)
+
 ```bash
-# One-time pull to your scratch (recommended)
 export SINGULARITY_TMPDIR=/scratch/$USER/.singularity/tmp
 export SINGULARITY_CACHEDIR=/scratch/$USER/.singularity
 mkdir -p /scratch/$USER/sifs
 
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
-  docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   library://qualis2006/pytorch/pt-2.8.0-cu129-devel:1.0
 ```
 
-> **Why the “devel” image?** Unsloth compiles Triton kernels on first run; the devel image already includes GCC & build tools.
+> **Why Sylabs Cloud?**  
+> This is the **customized, signed container** you or collaborators uploaded.  
+> It includes:  
+> - `git`, `curl`, `wget` installed  
+> - Locale configured (`en_US.UTF-8`) → avoids `setlocale` warnings  
+> - `/scratch`, `/home01`, `/apps` bind dirs created  
+> - Timezone set (`Asia/Seoul`)  
 >
-> **GPU architectures:** CUDA 12.9 builds target **Volta+** (V100), **Ampere** (A100) and **Hopper** (H100/H200).
+> Verify the signature:
+> ```bash
+> singularity verify /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
+> ```
+
+---
+
+### Option B — Pull the **raw upstream image** from Docker Hub
+
+```bash
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+```
+
+> **Caution:** This version is “bare-metal” and will require fixes:  
+> - Install `git`, `curl`, etc. manually  
+> - Configure `en_US.UTF-8` locales  
+> - Clean `/var/lib/apt/lists/*` before `apt-get install`  
 
 ---
 
