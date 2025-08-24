@@ -113,23 +113,6 @@ export PIP_CACHE_DIR=/scratch/$USER/.cache/pip
 export TMPDIR=/scratch/$USER/tmp
 mkdir -p "$HF_HOME" "$XDG_CACHE_HOME" "$PIP_CACHE_DIR" "$TMPDIR"
 
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
-  set -e
-  python3 -V
-  python3 -m venv "'"$VENV"'"
-  source "'"$VENV"'/bin/activate"
-  pip install -q --upgrade pip
-  # Unsloth + zoo from PyPI (recommended)
-  pip install -q "unsloth[base]" "unsloth_zoo[base]"
-  # Optional: faster Hub I/O
-  pip install -q "huggingface_hub[hf_transfer]>=0.24.0"
-  echo "✅ venv ready @ '"$VENV"'"
-'
-# Optional: enable accelerated Hub transfers globally
-export HF_HUB_ENABLE_HF_TRANSFER=1
-```
-
-```bash
 singularity exec --nv "$SIF" bash -lc '
   set -e
   python3 -V
@@ -147,18 +130,22 @@ singularity exec --nv "$SIF" bash -lc '
   pip install -q "huggingface_hub[hf_transfer]>=0.24.0"
   echo "✅ venv ready @ '"$VENV"'"
 '
+
+# packages versions
+singularity exec --nv "$SIF" bash -lc '
+  set -e
+  source "'"$VENV"'/bin/activate"
+  python -m pip list | grep -Ei "transformers|peft|bitsandbytes|unsloth"
+'
+bitsandbytes             0.47.0
+peft                     0.17.1
+transformers             4.56.0.dev0
+unsloth                  2025.8.9
+unsloth_zoo              2025.8.8
+
 # Optional: enable accelerated Hub transfers globally
 export HF_HUB_ENABLE_HF_TRANSFER=1
 ```
-
-**Notes**
-- If your site has strict egress, pre‑stage models into `$HF_HOME` or mirror them internally.
-- If PyPI versions drift, you can fall back to Git installs (inside the container):
-  ```bash
-  pip uninstall -y unsloth unsloth_zoo
-  pip install -q --no-deps git+https://github.com/unslothai/unsloth_zoo.git
-  pip install -q --no-deps git+https://github.com/unslothai/unsloth.git
-  ```
 
 ---
 
@@ -167,8 +154,7 @@ export HF_HUB_ENABLE_HF_TRANSFER=1
 > **Import order matters:** import **Unsloth first**, then `torch`/`transformers`.
 
 ```bash
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
-  export LC_ALL=C.UTF-8 LANG=C.UTF-8
+singularity exec --nv "$SIF" bash -lc '
   source "'"$VENV"'/bin/activate"
   python - <<PY
 import unsloth, unsloth_zoo
