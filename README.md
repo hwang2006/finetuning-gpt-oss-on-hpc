@@ -55,12 +55,12 @@ cd finetuning-gpt-oss-on-hpc
 srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
 
 # 1) Pull container (recommended: Sylabs Cloud, once)
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   library://qualis2006/pytorch/pt-2.8.0-cu129-devel:1.0
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   library://qualis2006/pytorch/pt-2.8.0-cu129-devel:latest
 
 # 2) Everything below runs IN the container
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 # Tip: pass LC_ALL/LANG to avoid locale warnings at shell startup.
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc 'echo "CUDA ok"; nvidia-smi | head -10'
+singularity exec --nv "$SIF" bash -lc 'echo "CUDA ok"; nvidia-smi | head -10'
 ```
 
 ---
