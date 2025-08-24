@@ -1,6 +1,5 @@
 #!/bin/bash
-#SBATCH --comment=tensorflow
-##SBATCH --partition=mig_amd_a100_4
+#SBATCH --comment=pytorch
 #SBATCH --partition=amd_a100nv_8
 ##SBATCH --partition=eme_h200nv_8
 #SBATCH --time=4:00:00        # walltime
@@ -30,7 +29,6 @@ export TMPDIR=${TMPDIR:-/scratch/$USER/tmp}
 mkdir -p "$HF_HOME" "$XDG_CACHE_HOME" "$PIP_CACHE_DIR" "$TMPDIR"
 
 # Minimal locale + tokenizer noise
-export LC_ALL=C LANG=C
 export TOKENIZERS_PARALLELISM=false
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export HF_HUB_ENABLE_HF_TRANSFER=1
@@ -44,9 +42,11 @@ echo "Singularity: $(command -v singularity || echo 'not found on host')"
 ./run_train.sh \
   --sif "$SIF" \
   --venv "$VENV" \
-  --model Qwen/Qwen2.5-7B-Instruct \
-  --dataset yahma/alpaca-cleaned --split 'train[:1%]' \
+  --model openai/gpt-oss-20b \
+  --dataset yahma/alpaca-cleaned --split 'train[:5%]' \
+  --out "$REPO/unsloth-out-20b" \
   --multi-gpu 1 \
   --max-seq-len 4096 --packing 1 --4bit 1 \
   --bs 1 --ga 16 --epochs 1 --lr 1e-4 \
-  --log-steps 10 --save-steps 500
+  --log-steps 10 --save-steps 500 \
+  --out "$REPO/unsloth-out-20b"
