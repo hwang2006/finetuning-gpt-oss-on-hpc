@@ -90,6 +90,7 @@ Always redirect Singularity cache/tmp to node-local `/tmp` to avoid metadata err
 mkdir -p /tmp/$USER/singularity/{cache,tmp} /tmp/$USER/sifs /scratch/$USER/sifs
 export SINGULARITY_CACHEDIR=/tmp/$USER/singularity/cache
 export SINGULARITY_TMPDIR=/tmp/$USER/singularity/tmp
+export REPO=/scratch/$USER/finetuning-gpt-oss-on-hpc
 ```
 
 ### 1. Build sandbox on LOGIN node (/tmp, with fakeroot)
@@ -97,7 +98,7 @@ export SINGULARITY_TMPDIR=/tmp/$USER/singularity/tmp
 Here you run `%post`, install missing tools (`git`, `wget`, `curl`, `locales`, etc.), configure locale/timezone.
 
 ```bash
-singularity build --fakeroot --tmpdir "$SINGULARITY_TMPDIR"   --sandbox /tmp/$USER/sifs/pt-sandbox pt-2.8.0-cu129-devel.def
+singularity build --fakeroot --tmpdir "$SINGULARITY_TMPDIR"  --sandbox /tmp/$USER/sifs/pt-sandbox "$REPO/pt-2.8.0-cu129-devel.def"
 ```
 
 ### 2. Move sandbox to /scratch (shared)
