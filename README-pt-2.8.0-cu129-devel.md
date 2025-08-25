@@ -140,7 +140,7 @@ cat > build_sif.sbatch <<'SB'
 #SBATCH -p <partition>
 #SBATCH -c 4
 #SBATCH --mem=16G
-#SBATCH -t 01:00:00
+#SBATCH -t 04:00:00
 set -euo pipefail
 
 mkdir -p /tmp/$USER
@@ -233,7 +233,7 @@ mkdir -p /tmp/$USER
 export TMPDIR=/tmp/$USER
 export SINGULARITY_TMPDIR=/tmp/$USER
 export SINGULARITY_CACHEDIR=/tmp/$USER
-singularity build -F /tmp/$USER/pt-2.8.0-cu129-devel.sif pt-2.8.0-cu129-devel.def
+singularity build --fakeroot /tmp/$USER/pt-2.8.0-cu129-devel.sif pt-2.8.0-cu129-devel.def
 mv /tmp/$USER/pt-2.8.0-cu129-devel.sif "$REPO_DIR"/
 ```
 
