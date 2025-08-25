@@ -6,12 +6,11 @@
 [![Singularity](https://img.shields.io/badge/Container-Singularity-indigo.svg)](https://docs.sylabs.io/guides/3.5/user-guide/introduction.html)
 [![Unsloth](https://img.shields.io/badge/Unsloth-2025.x-orange.svg)](https://github.com/unslothai/unsloth)
 
-This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OSS and similar HF models on HPC systems** using **[Unsloth](https://github.com/unslothai/unsloth) inside Singularity/Apptainer containers**.  
-All steps (env setup, inference, training, and uploading to Hugging Face) run **inside the container**.
+This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OSS and similar HF models on HPC systems** using **[Unsloth](https://github.com/unslothai/unsloth) inside Singularity/Apptainer containers**. 
 
-> Works with **Singularity _or_ Apptainer**. On many clusters, `singularity` is a symlink to Apptainer—commands below work unchanged.
-
-Tested on multi‑GPU nodes (A100/H100/H200) with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
+- Tested on H200/A100/V100 munti-GPU nodes with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
+- All steps (venv setup, training, inference, and HF upload) run inside the container.
+- Compatible with Singularity or Apptainer (on many clusters singularity is a symlink to Apptainer).
 
 **Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>
 
@@ -543,18 +542,22 @@ This script:
 ---
 
 ## Troubleshooting
-
-- **No GPU on login:** use `srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash` first.
-- **Locale warning at shell startup:** add `--env LC_ALL=C.UTF-8 --env LANG=C.UTF-8` to every `singularity exec` that launches `bash`.
-- **First‑run compile (Triton/GCC):** the **devel** image includes compilers; no extra bind mounts required.
-- **Tokenizers “fork” warning:** harmless under `torchrun`; set `TOKENIZERS_PARALLELISM=false` to silence.
-- **Slow long generations:** enable `--stream 1` in `run_infer.sh` to see tokens as they’re produced.
-- **Adapter ↔ base mismatch:** ensure the base model matches what the adapter was trained on (same family/shape/tokenizer).
-- **Hub auth:** gated/private models or pushing to private repos require `HF_TOKEN` or a prior `huggingface-cli login`.
-- **Slow downloads/uploads:** `pip install "huggingface_hub[hf_transfer]"` and `export HF_HUB_ENABLE_HF_TRANSFER=1`.
-- **Multi‑GPU training:** `--nproc_per_node` = number of GPUs; `torchrun` launches 1 process/GPU.
-- **If GPUs are visible via `nvidia-smi` but `torch.cuda.is_available()` is `False` inside the container:** check that no conflicting host libraries are present in `LD_LIBRARY_PATH` (e.g., third‑party `ffmpeg` dirs). Prefer `--cleanenv` or prune `LD_LIBRARY_PATH` to `/usr/local/nvidia/lib:/usr/local/nvidia/lib64`.
-
+- **“PACKING=1 requested but flash-attn not installed; forcing PACKING=0”**
+Flash-Attention 2 isn’t available on your node. The trainer will run with packing off. That’s fine; performance just won’t get the extra packing boost.
+- **Quantization API errors on 4.56–4.57**
+If you see `get_loading_attributes` crashes, either:
+-- stay on Transformers version **4.55.4** (default) and skip 4-bit, or
+-- use a separate venv with `transformers>=4.56,<4.58` (if your cluster mirror offers it), and rely on `infer_with_peft.py`’s new quantizer path.
+- **bitsandbytes not found**
+Install `bitsandbytes` in the venv (already in the quick start). Some clusters require NCCL/CUDA matching; use the container we ship.
+- **No GPU in container**
+Add `--nv` to every `singularity exec` and run on a GPU node. Check `nvidia-smi` inside the container.
+- **HF auth / private repos**
+Use `huggingface-cli login` inside the container, or set `HF_TOKEN` for scripts that push models.
+- **Long downloads/uploads**
+`pip install "huggingface_hub[hf_transfer]"` and export `HF_HUB_ENABLE_HF_TRANSFER=1`.
+- **Kernel warnings**
+Very old kernels may cause hangs with Accelerate/torch.distributed; this is a cluster-level setting. If you see warnings, ask your admins about a newer host kernel.
 ---
 
 ## License
