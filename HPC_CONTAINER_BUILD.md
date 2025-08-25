@@ -155,6 +155,7 @@ singularity exec /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif wget --version
 
 ```bash
 #!/bin/bash
+#SBATCH --comment pytorch
 #SBATCH -J torch28
 #SBATCH -N 1
 #SBATCH -n 1
