@@ -115,7 +115,7 @@ Packaging compresses the sandbox into a `.sif` image. Needs RAM for `mksquashfs`
 
 ```bash
 # Example: request interactive GPU/CPU job
-salloc -N 1 -n 1 --mem=16G -p gpu -t 01:00:00
+salloc -N 1 -n 1 --mem=16G -p amd_a100nv_8 -t 02:00:00 --comment pytorch
 
 mkdir -p /tmp/$USER/singularity/{cache,tmp}
 export SINGULARITY_CACHEDIR=/tmp/$USER/singularity/cache
