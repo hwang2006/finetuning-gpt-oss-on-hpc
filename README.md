@@ -8,7 +8,7 @@
 
 This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OSS and similar HF models on HPC systems** using **[Unsloth](https://github.com/unslothai/unsloth) inside Singularity/Apptainer containers**. 
 
-- Tested on H200/A100/V100 munti-GPU nodes with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
+- Tested on H200/A100/V100 multi-GPU nodes with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
 - All steps (venv setup, training, inference, and HF upload) run inside the container.
 - Compatible with Singularity or Apptainer (on many clusters singularity is a symlink to Apptainer).
 
@@ -20,20 +20,15 @@ This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OS
 
 - [Quick Start](#quick-start)
 - [Repository Layout](#repository-layout)
+- [Container Build Guide](#container-build-guide)
 - [1) Pull the Container](#1-pull-the-container)
 - [2) Create a Python venv **inside** the container](#2-create-a-python-venv-inside-the-container)
 - [3) Sanity Check](#3-sanity-check)
 - [4) Inference](#4-inference)
-  - [Single GPU](#single-gpu)
-  - [Multi-GPU](#multi-gpu)
-  - [Streaming & Long Outputs](#streaming--long-outputs)
 - [5) Training](#5-training)
-  - [Single-GPU](#single-gpu)
-  - [Multiple GPUs](#multiple-gpus)
-  - [Flexible trainer with torchrun](#flexible-trainer-with-torchrun)
-  - [SLURM batch template (example)](#slurm-batch-template-example)
 - [6) Upload LoRA Adapter to Hugging Face](#6-upload-lora-adapter-to-hugging-face)
 - [7) Inference with LoRA Adapters (after training/upload)](#7-inference-with-lora-adapters-after-trainingupload)
+- [Version Pinning & Compatibility](#version-pinning--compatibility)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -58,7 +53,6 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   library://qualis
 
 # 2) Everything below runs IN the container
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
-# Tip: pass LC_ALL/LANG to avoid locale warnings at shell startup.
 singularity exec --nv "$SIF" bash -lc 'echo "CUDA ok"; nvidia-smi | head -10'
 ```
 
@@ -75,8 +69,23 @@ singularity exec --nv "$SIF" bash -lc 'echo "CUDA ok"; nvidia-smi | head -10'
 ├── train_unsloth.py          # Minimal SFT example
 ├── train_unsloth_flex.py     # Flexible SFT (packing, JSONL/HF datasets, torchrun-ready)
 ├── upload_lora_to_hf.py      # Push LoRA + tokenizer to Hugging Face
+├── pt-2.8.0-cu129-devel.def  # Singularity definition file (build your own container)
+├── HPC_CONTAINER_BUILD.md    # Step-by-step container build guide (login/compute node workflow)
 └── README.md
 ```
+
+---
+
+## Container Build Guide
+
+If you want to build the container yourself (instead of pulling from Sylabs Cloud), see [HPC_CONTAINER_BUILD.md](HPC_CONTAINER_BUILD.md).
+
+That guide explains:
+- Why a **sandbox build** is first needed (to install `git`, `wget`, etc. missing from the upstream PyTorch image).  
+- Why the build typically uses **`/tmp`** on login nodes (local SSD avoids metadata errors on shared filesystems).  
+- How to use **fakeroot** on the login node, then move the sandbox to `/scratch` and finalize the `.sif` packaging on a compute node (without fakeroot).  
+
+> **Important:** You need `git` inside the container because later steps (`pip install` in venv) fetch packages directly from GitHub.
 
 ---
 
