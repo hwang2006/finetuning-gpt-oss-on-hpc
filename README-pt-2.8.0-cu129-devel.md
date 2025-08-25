@@ -33,7 +33,7 @@ mkdir -p "$REPO_DIR" "/tmp/$USER"
 
 ## 1) Create a writable sandbox from the Docker base
 ```bash
-singularity build --fakeroot --sandbox "$WORK_SANDBOX" \
+singularity build --sandbox "$WORK_SANDBOX" \
   docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
 ```
 
