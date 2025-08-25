@@ -155,9 +155,8 @@ singularity exec --nv "$SIF" bash -lc '
   echo "✅ venv ready @ '"$VENV"'"
 '
 
-# packages versions
+# check core packages versions 
 singularity exec --nv "$SIF" bash -lc '
-  set -e
   source "'"$VENV"'/bin/activate"
   python -m pip list | grep -Ei "transformers|peft|bitsandbytes|unsloth"
 '
@@ -541,7 +540,20 @@ This script:
 
 > On **Transformers 4.55.4**, the script will **fall back to bf16/fp16** if 4-bit quantization isn’t supported by that version. See the next section for the pinning strategy.
 ---
+## Version Pinning & Compatibility
+### Why pin at all?
 
+
+### Check the active versions (inside the container):
+```bash
+singularity exec --nv "$SIF" bash -lc '
+  source "'"$VENV"'/bin/activate"
+  python -m pip list | grep -Ei "transformers|peft|bitsandbytes|unsloth"
+'
+```
+
+
+---
 ## Troubleshooting
 - **“PACKING=1 requested but flash-attn not installed; forcing PACKING=0”**
 Flash-Attention 2 isn’t available on your node. The trainer will run with packing off. That’s fine; performance just won’t get the extra packing boost.
