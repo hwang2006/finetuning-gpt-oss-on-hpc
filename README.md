@@ -100,7 +100,8 @@ export SINGULARITY_TMPDIR=/scratch/$USER/.singularity/tmp
 export SINGULARITY_CACHEDIR=/scratch/$USER/.singularity
 mkdir -p /scratch/$USER/sifs
 
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   library://qualis2006/pytorch/pt-2.8.0-cu129-devel:1.0
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
+      library://qualis2006/default/pt-2.8.0-cu129-devel:1.0
 ```
 
 > **Why Sylabs Cloud?**  
