@@ -109,7 +109,7 @@ export SINGULARITY_MKSQUASHFS_PROCS=2
 export SINGULARITY_COMPRESSOR=gzip
 
 # Build entirely on local /tmp/$USER, then move the SIF to REPO_DIR
-singularity build -F /tmp/$USER/pt-2.8.0-cu129-devel.sif "$TMP_STAGE"/
+singularity build /tmp/$USER/pt-2.8.0-cu129-devel.sif "$TMP_STAGE"/
 mv /tmp/$USER/pt-2.8.0-cu129-devel.sif "$REPO_DIR"/
 ```
 
@@ -151,7 +151,7 @@ export SINGULARITY_MKSQUASHFS_ARGS="-no-xattrs -mem 2G"
 export SINGULARITY_MKSQUASHFS_PROCS=2
 export SINGULARITY_COMPRESSOR=gzip
 
-singularity build --fakeroot /tmp/$USER/pt-2.8.0-cu129-devel.sif "$TMP_STAGE"/
+singularity build /tmp/$USER/pt-2.8.0-cu129-devel.sif "$TMP_STAGE"/
 mv /tmp/$USER/pt-2.8.0-cu129-devel.sif "$REPO_DIR"/
 SB
 
