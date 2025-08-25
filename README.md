@@ -508,7 +508,7 @@ singularity exec --nv "$SIF" bash -lc '
 
 **Target repo naming & permissions**
 
-- Use your **Hugging Face username or org** and a short, descriptive repo name:  
+- Use your **Hugging Face username or org** and a short, descriptive repo name (for example):  
   `REPO_ID="yourname/qwen2.5-7b-alpaca-1pct-lora"`
 - The script will **create the repo if it doesn’t exist** (public by default). Make it private later if desired.
 - `HF_TOKEN` must have **write access** to that namespace (user/org).  
@@ -554,11 +554,12 @@ This script:
 Transformers **4.56–4.57** introduced a new quantization stack (AutoHfQuantizer). Mixing old/new quant paths caused errors like:
 - `AttributeError: 'BitsAndBytesConfig' object has no attribute 'get_loading_attributes'`
 - `AttributeError: 'Bnb4BitHfQuantizer' object has no attribute 'get_loading_attributes'`
+
 This repo uses a pragmatic split:
 - **Training**: relies on Unsloth + stable Transformers on your image; no hard pin in `run_train.sh`. The script auto-disables fragile paths (e.g., fused CE) when needed.
 - **Inference**: `run_infer.sh` contains a **pin block** that prefers **Transformers 4.55.4** for Unsloth’s eager path **unless** you explicitly want 4-bit with the new API.
--- On 4.55.4, --load-in-4bit gracefully falls back to bf16/fp16.
--- If you truly need 4-bit via the new API, set up a **separate venv** pinned to `transformers>=4.56,<4.58` and use the adapter-aware `infer_with_peft.py` (which can build the new quantizer config). Some HPC mirrors don’t carry those wheels; your pin block will tell you if that’s the case.
+  - On 4.55.4, --load-in-4bit gracefully falls back to bf16/fp16.
+  - If you truly need 4-bit via the new API, set up a **separate venv** pinned to `transformers>=4.56,<4.58` and use the adapter-aware `infer_with_peft.py` (which can build the new quantizer config). Some HPC mirrors don’t carry those wheels; your pin block will tell you if that’s the case.
 
 ### Check the active versions (inside the container):
 ```bash
@@ -575,8 +576,8 @@ singularity exec --nv "$SIF" bash -lc '
 Flash-Attention 2 isn’t available on your node. The trainer will run with packing off. That’s fine; performance just won’t get the extra packing boost.
 - **Quantization API errors on 4.56–4.57**
 If you see `get_loading_attributes` crashes, either:
-+ stay on **4.55.4** (default) and skip 4-bit, or
-+ use a separate venv with `transformers>=4.56,<4.58` (if your cluster mirror offers it), and rely on `infer_with_peft.py`’s new quantizer path.
+  - stay on **4.55.4** (default) and skip 4-bit, or
+  - use a separate venv with `transformers>=4.56,<4.58` (if your cluster mirror offers it), and rely on `infer_with_peft.py`’s new quantizer path.
 - **bitsandbytes not found**
 Install `bitsandbytes` in the venv (already in the quick start). Some clusters require NCCL/CUDA matching; use the container we ship.
 - **No GPU in container**
