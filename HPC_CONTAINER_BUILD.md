@@ -1,19 +1,40 @@
-# Singularity Build & Package Workflow on HPC
+# HPC Container Build Guide
 
-This README summarizes the procedure for building Singularity containers in an HPC environment with **login nodes** (with `--fakeroot`) and **compute nodes** (without `--fakeroot`). It covers using node-local `/tmp` vs shared `/scratch/$USER`.
+This document explains how to build and package custom Singularity (SIF) containers for HPC environments.  
+It merges both the **practical workflow** and the **background rationale** so you have everything in one place.
+
+---
+
+## Why build your own container?
+
+- **Missing tools in base images**  
+  Base PyTorch images (from DockerHub or GHCR) are often slim. They may lack:
+  - `git` (needed because many Python packages install directly from GitHub via pip)
+  - `wget` / `curl` (needed for fetching data/models)
+  - Proper `locales` (to avoid `setlocale` warnings in Python)
+  - `tzdata` (timezone settings)
+- **Creating Python virtual environments**  
+  To use pip reliably, `git` and HTTPS tools are required inside the container.  
+  Without them, you cannot build environments that depend on GitHub-hosted packages.
+- **Cluster portability**  
+  Adding bind mount points like `/scratch`, `/apps`, `/home01` ensures paths exist when the container runs on HPC nodes.
+- **Locale & Timezone**  
+  Ensuring `en_US.UTF-8` and correct timezone avoids annoying warnings and improves reproducibility.
 
 ---
 
 ## Filesystems in HPC
 
 - **/tmp (node-local)**
-  - Fast, local SSD or RAM-disk.
-  - Full POSIX metadata support (no `lutimes` errors).
+  - Fast local SSD or RAM-disk.
+  - Full POSIX metadata support (avoids `lutimes` fakeroot errors).
+  - Ephemeral (deleted when job ends).
   - Not shared between nodes.
+
 - **/scratch/$USER (shared)**
   - Large, persistent, visible cluster-wide.
-  - Metadata syscalls like `lutimes()` may fail under fakeroot.
-  - Best for storing finished images, not for unpacking layers.
+  - May cause metadata syscalls like `lutimes()` to fail under fakeroot.
+  - Best for storing **finished SIF images**, datasets, checkpoints.
 
 ---
 
@@ -60,9 +81,11 @@ This README summarizes the procedure for building Singularity containers in an H
 
 ---
 
-## Step-by-Step
+## Step-by-Step Workflow
 
 ### 0. Session prep
+Always redirect Singularity cache/tmp to node-local `/tmp` to avoid metadata errors.
+
 ```bash
 mkdir -p /tmp/$USER/singularity/{cache,tmp} /tmp/$USER/sifs /scratch/$USER/sifs
 export SINGULARITY_CACHEDIR=/tmp/$USER/singularity/cache
@@ -70,35 +93,40 @@ export SINGULARITY_TMPDIR=/tmp/$USER/singularity/tmp
 ```
 
 ### 1. Build sandbox on LOGIN node (/tmp, with fakeroot)
+
+Here you run `%post`, install missing tools (`git`, `wget`, `curl`, `locales`, etc.), configure locale/timezone.
+
 ```bash
-singularity build --fakeroot --tmpdir "$SINGULARITY_TMPDIR" \
-  --sandbox /tmp/$USER/sifs/pt-sandbox pt-2.8.0-cu129-devel.def
+singularity build --fakeroot --tmpdir "$SINGULARITY_TMPDIR"   --sandbox /tmp/$USER/sifs/pt-sandbox pt-2.8.0-cu129-devel.def
 ```
 
 ### 2. Move sandbox to /scratch (shared)
+
+Since `/tmp` is node-local, rsync to `/scratch/$USER` for cluster-wide visibility.
+
 ```bash
-rsync -a --delete --no-xattrs --no-owner --no-group \
-  /tmp/$USER/sifs/pt-sandbox/  /scratch/$USER/sifs/pt-sandbox
+rsync -a --delete --no-xattrs --no-owner --no-group   /tmp/$USER/sifs/pt-sandbox/  /scratch/$USER/sifs/pt-sandbox
 ```
 
 ### 3. Package SIF on a COMPUTE node (no fakeroot)
+
+Packaging compresses the sandbox into a `.sif` image. Needs RAM for `mksquashfs`.
+
 ```bash
-# SLURM example
+# Example: request interactive GPU/CPU job
 salloc -N 1 -n 1 --mem=16G -p gpu -t 01:00:00
 
 mkdir -p /tmp/$USER/singularity/{cache,tmp}
 export SINGULARITY_CACHEDIR=/tmp/$USER/singularity/cache
 export SINGULARITY_TMPDIR=/tmp/$USER/singularity/tmp
 
-singularity build --notest --tmpdir "$SINGULARITY_TMPDIR" \
-  /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
-  /scratch/$USER/sifs/pt-sandbox
+singularity build --notest --tmpdir "$SINGULARITY_TMPDIR"   /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   /scratch/$USER/sifs/pt-sandbox
 ```
 
 ### 4. Validate & run
+
 ```bash
-singularity exec --nv /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
-  python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+singularity exec --nv /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
 
 singularity exec /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif git --version
 singularity exec /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif wget --version
@@ -109,16 +137,16 @@ singularity exec /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif wget --version
 ## Common Pitfalls & Fixes
 
 - **`lutimes ... operation not permitted`**  
-  → Build on node-local `/tmp`, not on `/scratch`.
+  → Happens when fakeroot builds on `/scratch`. Fix: build sandbox in `/tmp`.
 
-- **`signal: killed`** during packaging  
-  → `mksquashfs` ran out of memory. Request more RAM with SLURM (`--mem=16G+`).
+- **`signal: killed` during packaging**  
+  → `mksquashfs` ran out of memory. Request more RAM (`--mem=16G+`).
 
 - **Sandbox invisible on compute node**  
-  → `/tmp` is per-node. Always rsync to `/scratch` for shared access.
+  → `/tmp` is per-node. Must rsync to `/scratch`.
 
 - **No fakeroot on compute node**  
-  → Packaging doesn’t need fakeroot, only `%post` build does.
+  → That’s fine. Packaging (`mksquashfs`) doesn’t need fakeroot, only `%post` does.
 
 ---
 
@@ -153,7 +181,7 @@ PY'
 
 ## Key Takeaways
 
-1. **Build on /tmp (login node, fakeroot)** → run `%post`, install packages.  
-2. **Rsync sandbox to /scratch** → shared access.  
-3. **Package on compute node (no fakeroot)** → produce SIF.  
-4. **Run the SIF anywhere** → portable, immutable container.  
+1. **Build sandbox on /tmp (login node with fakeroot)** → run `%post`, install tools.  
+2. **Rsync sandbox to /scratch** → make it visible cluster-wide.  
+3. **Package SIF on compute node (no fakeroot)** → `mksquashfs` needs RAM.  
+4. **Run final `.sif` anywhere** → portable, immutable container with all dependencies.
