@@ -539,6 +539,7 @@ This script:
   --user "Suggest a heartwarming film and explain why in one sentence."
 ```
 
+> On **Transformers 4.55.4**, the script will **fall back to bf16/fp16** if 4-bit quantization isn’t supported by that version. See the next section for the pinning strategy.
 ---
 
 ## Troubleshooting
@@ -546,7 +547,7 @@ This script:
 Flash-Attention 2 isn’t available on your node. The trainer will run with packing off. That’s fine; performance just won’t get the extra packing boost.
 - **Quantization API errors on 4.56–4.57**
 If you see `get_loading_attributes` crashes, either:
--- stay on Transformers version **4.55.4** (default) and skip 4-bit, or
+-- stay on **4.55.4** (default) and skip 4-bit, or
 -- use a separate venv with `transformers>=4.56,<4.58` (if your cluster mirror offers it), and rely on `infer_with_peft.py`’s new quantizer path.
 - **bitsandbytes not found**
 Install `bitsandbytes` in the venv (already in the quick start). Some clusters require NCCL/CUDA matching; use the container we ship.
