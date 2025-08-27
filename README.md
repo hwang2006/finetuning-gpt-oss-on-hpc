@@ -78,7 +78,7 @@ singularity exec --nv "$SIF" bash -lc 'echo "CUDA ok"; nvidia-smi | head -10'
 
 ## Container Build Guide
 
-If you want to build the container yourself (instead of pulling from Sylabs Cloud), see [HPC_CONTAINER_BUILD.md](HPC_CONTAINER_BUILD.md).
+If you want to build the container yourself (instead of pulling from GitHub Container Registry (GHCR)), see [HPC_CONTAINER_BUILD.md](HPC_CONTAINER_BUILD.md).
 
 That guide explains:
 - Why a **sandbox build** is first needed (to install `git`, `wget`, etc. missing from the upstream PyTorch image).  
@@ -93,7 +93,7 @@ That guide explains:
 
 You have **two choices**:  
 
-### Option A — Pull the **prebuilt, signed** image from Sylabs Cloud (recommended)
+### Option A — Pull the **prebuilt, signed** image from GitHub Container Registry (GHCR) (recommended)
 
 ```bash
 export SINGULARITY_TMPDIR=/scratch/$USER/.singularity/tmp
@@ -101,7 +101,7 @@ export SINGULARITY_CACHEDIR=/scratch/$USER/.singularity
 mkdir -p /scratch/$USER/sifs
 
 singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
-      library://qualis2006/default/pt-2.8.0-cu129-devel:1.0
+      oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
 > **Why Sylabs Cloud?**  
