@@ -105,11 +105,12 @@ You have **two choices**:
 ### Option A — Pull the **prebuilt** image from GitHub Container Registry (GHCR) (recommended)
 
 ```bash
-export SINGULARITY_TMPDIR=/scratch/$USER/.singularity/tmp
+export SIFDIR=/scratch/$USER/sifs
 export SINGULARITY_CACHEDIR=/scratch/$USER/.singularity
-mkdir -p /scratch/$USER/sifs
+export SINGULARITY_TMPDIR=/scratch/$USER/.singularity/tmp
+mkdir -p "$SIFDIR" "$SINGULARITY_CACHEDIR" "$SINGULARITY_TMPDIR"
 
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
+singularity pull "$SIFDIR/pt-2.8.0-cu129-devel.sif" \
       oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
