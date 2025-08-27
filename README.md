@@ -44,20 +44,29 @@ cd /scratch/$USER
 git clone https://github.com/hwang2006/finetuning-gpt-oss-on-hpc.git
 cd finetuning-gpt-oss-on-hpc
 
-# (Optional) On SLURM clusters, get an interactive **GPU** shell (login nodes usually have no GPUs):
-# (replace <account> and <gpu-partition> for your site)
-srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
+# (Optional) SLURM interactive GPU shell
+# srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
 
-# 1) Pull container (recommended: Sylabs Cloud, once)
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
+# Scratch-backed cache so you don't fill $HOME
+export SIFDIR=/scratch/$USER/sifs
+export SINGULARITY_CACHEDIR=/scratch/$USER/.singularity
+export SINGULARITY_TMPDIR=/scratch/$USER/.singularity/tmp
+mkdir -p "$SIFDIR" "$SINGULARITY_CACHEDIR" "$SINGULARITY_TMPDIR"
+
+# 1) Pull container (ORAS/OCI) 
+singularity pull "$SIFDIR/pt-2.8.0-cu129-devel.sif" \
+  oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
+
 
 # 2) Everything below runs IN the container
-export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
-singularity exec --nv "$SIF" bash -lc 'echo "CUDA ok"; nvidia-smi | head -10'
+export SIF="$SIFDIR/pt-2.8.0-cu129-devel.sif"
+singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
+  echo "CUDA OK"; nvidia-smi | head -10
+'
 ```
+> Need 4-bit or mixing GPUs? See the [compatibility matrix](#compatibility-matrix--gpus--transformers--4-bit-behavior).
 
 ---
-
 ## Repository Layout
 
 ```
@@ -566,7 +575,20 @@ singularity exec --nv "$SIF" bash -lc '
   python -m pip list | grep -Ei "transformers|peft|bitsandbytes|unsloth"
 '
 ```
+### Compatibility Matrix — GPUs × Transformers × 4-bit behavior
 
+| GPU (arch)     | SM | Preferred dtype | Transformers **4.55.4** (legacy path) | Transformers **4.56–4.57** (new quant) | Transformers **≥4.58** |
+|---|---:|---|---|---|---|
+| **H200 / H100 (Hopper)** | 90 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). | ⚠️ Bleeding-edge; may break Unsloth’s eager path. Test only. |
+| **A100 (Ampere)**        | 80 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). | ⚠️ Same caveats as above. |
+| **V100 (Volta)**         | 70 | **fp16** | ✅ Stable infer/train (fp16). `--load-in-4bit` ➜ **falls back** to fp16 with warning. | ✅ 4-bit can work via *AutoHfQuantizer*; non-quant paths stay **fp16**. | ⚠️ Same caveats as above. |
+
+**Notes**
+1) `run_infer.sh` pins to **Transformers 4.55.4** for reliable Unsloth eager inference. On this version, `--load-in-4bit` **gracefully falls back** to bf16/fp16.  
+2) If you **need real 4-bit**, use a **separate venv** with `transformers>=4.56,<4.58` and run `infer_with_peft.py` (new *AutoHfQuantizer* path). Some HPC mirrors may not carry those wheels.  
+3) Make sure `bitsandbytes` (e.g., 0.47.0) and Triton (≥3.4.0) are in the venv; otherwise you’ll see MXFP4 fallback messages.  
+4) `run_train.sh` doesn’t hard-pin TF; it toggles safe DDP flags and only requires Flash-Attn 2 if `PACKING=1`.  
+5) V100 lacks bf16 → use fp16 (scripts already choose this).  
 
 ---
 ## Troubleshooting
