@@ -104,7 +104,7 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
       oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
-> **Why Sylabs Cloud?**  
+> **Why GitHub Container Registry (GHCR)?**  
 > This is the **customized, signed container** you or collaborators uploaded.  
 > It includes:  
 > - `git`, `curl`, `wget` installed  
