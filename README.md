@@ -250,6 +250,7 @@ Notes:
 # Minimal example (Qwen 0.5B)
 ./run_infer.sh \
   --multi-gpu 0 \
+  --stream 0 \
   --model Qwen/Qwen2.5-0.5B-Instruct \
   --user "Tell me a fun space fact in one sentence."
 ```
