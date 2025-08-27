@@ -104,8 +104,8 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
       oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
-> **Why GitHub Container Registry (GHCR)?**  
-> This is the **customized, signed container** you or collaborators uploaded.  
+> This is the **customized, signed image** I built. You can also rebuild it yourself by customizing the `pt-2.8.0-cu129-devel.def` definition file if needed:
+
 > It includes:  
 > - `git`, `curl`, `wget` installed  
 > - Locale configured (`en_US.UTF-8`) → avoids `setlocale` warnings  
@@ -122,7 +122,8 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
 ### Option B — Pull the **raw upstream image** from Docker Hub
 
 ```bash
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
+      docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
 ```
 
 > **Caution:** This version is “bare-metal” and will require fixes:  
