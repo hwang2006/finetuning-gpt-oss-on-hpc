@@ -60,7 +60,7 @@ singularity pull "$SIFDIR/pt-2.8.0-cu129-devel.sif" \
 
 # 2) Everything below runs IN the container
 export SIF="$SIFDIR/pt-2.8.0-cu129-devel.sif"
-singularity exec --nv --env LC_ALL=C.UTF-8 --env LANG=C.UTF-8 "$SIF" bash -lc '
+singularity exec --nv "$SIF" bash -lc '
   echo "CUDA OK"; nvidia-smi | head -10
 '
 ```
