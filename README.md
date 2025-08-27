@@ -121,7 +121,7 @@ singularity pull "$SIFDIR/pt-2.8.0-cu129-devel.sif" \
 ### Option B — Pull the **raw upstream image** from Docker Hub
 
 ```bash
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
+singularity pull "$SIFDIR/pt-2.8.0-cu129-devel.sif" \
       docker://ghcr.io/pytorch/pytorch:2.8.0-cuda12.9-cudnn9-devel
 ```
 
