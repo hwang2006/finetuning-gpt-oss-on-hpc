@@ -104,15 +104,13 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
       oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
-> This is the **customized image** I built. You can also rebuild it yourself by customizing the `pt-2.8.0-cu129-devel.def` definition file if needed:
-
-> It includes:  
+> This is the **customized image** I built. It include:
 > - `git`, `curl`, `wget` installed  
 > - Locale configured (`en_US.UTF-8`) → avoids `setlocale` warnings  
 > - `/scratch`, `/home01`, `/apps` bind dirs created  
 > - Timezone set (`Asia/Seoul`)  
 
-
+>  You can also rebuild it yourself by using or customizing the `pt-2.8.0-cu129-devel.def` definition file if needed:
 ---
 
 ### Option B — Pull the **raw upstream image** from Docker Hub
