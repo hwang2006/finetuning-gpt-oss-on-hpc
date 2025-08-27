@@ -93,7 +93,7 @@ That guide explains:
 
 You have **two choices**:  
 
-### Option A — Pull the **prebuilt, signed** image from GitHub Container Registry (GHCR) (recommended)
+### Option A — Pull the **prebuilt** image from GitHub Container Registry (GHCR) (recommended)
 
 ```bash
 export SINGULARITY_TMPDIR=/scratch/$USER/.singularity/tmp
@@ -104,7 +104,7 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
       oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
-> This is the **customized image** I built. It include:
+> This is the **customized image** I built and uploded to GHCR. It include:
 > - `git`, `curl`, `wget` installed  
 > - Locale configured (`en_US.UTF-8`) → avoids `setlocale` warnings  
 > - `/scratch`, `/home01`, `/apps` bind dirs created  
