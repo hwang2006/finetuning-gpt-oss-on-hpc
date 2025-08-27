@@ -49,7 +49,7 @@ cd finetuning-gpt-oss-on-hpc
 srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
 
 # 1) Pull container (recommended: Sylabs Cloud, once)
-singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif   library://qualis2006/default/pt-2.8.0-cu129-devel:1.0
+singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 
 # 2) Everything below runs IN the container
 export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
