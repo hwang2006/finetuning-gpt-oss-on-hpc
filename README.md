@@ -577,11 +577,11 @@ singularity exec --nv "$SIF" bash -lc '
 ```
 ### Compatibility Matrix — GPUs × Transformers × 4-bit behavior
 
-| GPU (arch)     | SM | Preferred dtype | Transformers **4.55.4** (legacy path) | Transformers **4.56–4.57** (new quant) | Transformers **≥4.58** |
-|---|---:|---|---|---|---|
-| **H200 / H100 (Hopper)** | 90 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). | ⚠️ Bleeding-edge; may break Unsloth’s eager path. Test only. |
-| **A100 (Ampere)**        | 80 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). | ⚠️ Same caveats as above. |
-| **V100 (Volta)**         | 70 | **fp16** | ✅ Stable infer/train (fp16). `--load-in-4bit` ➜ **falls back** to fp16 with warning. | ✅ 4-bit can work via *AutoHfQuantizer*; non-quant paths stay **fp16**. | ⚠️ Same caveats as above. |
+| GPU (arch)     | SM | Preferred dtype | Transformers **4.55.4** (legacy path) | Transformers **4.56.0.dev0 (new quant) | 
+|---|---:|---|---|---|
+| **H200 / H100 (Hopper)** | 90 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). |
+| **A100 (Ampere)**        | 80 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). |
+| **V100 (Volta)**         | 70 | **fp16** | ✅ Stable infer/train (fp16). `--load-in-4bit` ➜ **falls back** to fp16 with warning. | ✅ 4-bit can work via *AutoHfQuantizer*; non-quant paths stay **fp16**. |
 
 **Notes**
 1) `run_infer.sh` pins to **Transformers 4.55.4** for reliable Unsloth eager inference. On this version, `--load-in-4bit` **gracefully falls back** to bf16/fp16.  
