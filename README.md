@@ -104,18 +104,14 @@ singularity pull /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif \
       oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
-> This is the **customized, signed image** I built. You can also rebuild it yourself by customizing the `pt-2.8.0-cu129-devel.def` definition file if needed:
+> This is the **customized image** I built. You can also rebuild it yourself by customizing the `pt-2.8.0-cu129-devel.def` definition file if needed:
 
 > It includes:  
 > - `git`, `curl`, `wget` installed  
 > - Locale configured (`en_US.UTF-8`) → avoids `setlocale` warnings  
 > - `/scratch`, `/home01`, `/apps` bind dirs created  
 > - Timezone set (`Asia/Seoul`)  
->
-> Verify the signature:
-> ```bash
-> singularity verify /scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
-> ```
+
 
 ---
 
