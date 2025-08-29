@@ -172,10 +172,12 @@ singularity exec --nv "$SIF" bash -lc '
   python -m pip list | grep -Ei "transformers|peft|bitsandbytes|kernels|unsloth"
 '
 bitsandbytes             0.47.0
+kernels                  0.9.0
 peft                     0.17.1
 transformers             4.56.0.dev0
-unsloth                  2025.8.9
-unsloth_zoo              2025.8.8
+triton_kernels           1.0.0
+unsloth                  2025.8.10
+unsloth_zoo              2025.8.9
 
 # Optional: enable accelerated Hub transfers globally
 export HF_HUB_ENABLE_HF_TRANSFER=1
