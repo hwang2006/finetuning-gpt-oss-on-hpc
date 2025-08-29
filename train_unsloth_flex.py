@@ -1,4 +1,4 @@
-# train_unsloth_flex_fix.py
+# train_unsloth_flex.py
 # Flexible SFT with Unsloth + TRL, single/multi-GPU (torchrun).
 # Reads knobs from env (aligned with run_train.sh). Supports HF datasets and JSONL.
 # - Multi-GPU DDP friendly (disables GC when world_size>1 to avoid "ready twice")

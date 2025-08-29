@@ -252,6 +252,11 @@ COMMON_ENV=(
   "SINGULARITYENV_USE_4BIT=$USE_4BIT"
 )
 
+# Optionally forward an HF token for gated repos, if present on the host
+if [[ -n "${HF_TOKEN:-}" ]]; then
+  COMMON_ENV+=("SINGULARITYENV_HF_TOKEN=$HF_TOKEN")
+fi
+
 # =========================
 # Launch inside container
 # =========================
@@ -266,7 +271,8 @@ singularity exec --nv --bind /scratch:/scratch "$SIF" bash -lc "
     python -m venv \"$VENV\"
     source \"$VENV/bin/activate\"
     python -m pip -q install -U pip
-    python -m pip -q install 'unsloth[base]' 'unsloth_zoo[base]' datasets trl
+    python -m pip -q install 'unsloth[base]' 'unsloth_zoo[base]' datasets trl accelerate
+    python -m pip -q install -U hf-transfer || true
   else
     source \"$VENV/bin/activate\"
     python - <<'PY'
@@ -280,11 +286,29 @@ except Exception: need += ['datasets']
 try:
   import trl  # noqa
 except Exception: need += ['trl']
+try:
+  import accelerate  # noqa
+except Exception: need += ['accelerate']
 if need:
   import sys, subprocess
   subprocess.check_call([sys.executable,'-m','pip','install','-q',*need])
 PY
   fi
+
+  # Prefer HF transfer acceleration unless disabled
+  export HF_HUB_ENABLE_HF_TRANSFER=\"\${HF_HUB_ENABLE_HF_TRANSFER:-1}\"
+
+  # One-line versions banner (safe heredoc)
+  python - <<'PY'
+import sys
+try:
+    import torch, transformers
+    tfv = transformers.__version__
+except Exception:
+    import torch
+    tfv = '<missing>'
+print(f\"[DBG] py={sys.version.split()[0]} torch={torch.__version__} cuda={torch.version.cuda} tf={tfv}\")
+PY
 
   # --- Capability probe: Flash-Attn 2 ---
   HAS_FA2=\$(python -c 'import importlib.util as u; print(1 if u.find_spec(\"flash_attn\") else 0)' 2>/dev/null || echo 0)
