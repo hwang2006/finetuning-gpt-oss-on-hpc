@@ -174,7 +174,7 @@ singularity exec --nv "$SIF" bash -lc '
 bitsandbytes             0.47.0
 kernels                  0.9.0
 peft                     0.17.1
-transformers             4.56.0.dev0
+transformers             4.56.0
 triton_kernels           1.0.0
 unsloth                  2025.8.10
 unsloth_zoo              2025.8.9
