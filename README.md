@@ -159,7 +159,8 @@ singularity exec --nv "$SIF" bash -lc '
     "unsloth[base] @ git+https://github.com/unslothai/unsloth.git" \
     torchvision bitsandbytes \
     git+https://github.com/huggingface/transformers \
-    git+https://github.com/triton-lang/triton.git@main#subdirectory=python/triton_kernels
+    git+https://github.com/triton-lang/triton.git@main#subdirectory=python/triton_kernels \
+    kernels
   # Optional: faster Hub I/O
   pip install -q "huggingface_hub[hf_transfer]>=0.24.0"
   echo "✅ venv ready @ '"$VENV"'"
