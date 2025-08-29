@@ -169,7 +169,7 @@ singularity exec --nv "$SIF" bash -lc '
 # check core packages versions 
 singularity exec --nv "$SIF" bash -lc '
   source "'"$VENV"'/bin/activate"
-  python -m pip list | grep -Ei "transformers|peft|bitsandbytes|unsloth"
+  python -m pip list | grep -Ei "transformers|peft|bitsandbytes|kernels|unsloth"
 '
 bitsandbytes             0.47.0
 peft                     0.17.1
