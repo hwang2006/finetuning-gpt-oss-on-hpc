@@ -12,7 +12,25 @@ This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OS
 - All steps (venv setup, training, inference, and HF upload) run inside the container.
 - Compatible with Singularity or Apptainer (on many clusters singularity is a symlink to Apptainer).
 
-**Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>
+**Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>  
+**Latest tag:** `v1.0.0`
+
+---
+
+## ✨ What’s New in v1.0.0
+
+- **Unified inference wrapper (`run_infer.sh`)**
+  - Full `--help` output with **all arguments + defaults**.
+  - `DEBUG_BANNER=1` mode prints resolved paths, GPU list, **and a Pin Decision line**.
+  - Pin-policy logic for `transformers`: `auto` / `stability` / `none`.
+- **Cleaner path selection (`infer_unsloth.py`)**
+  - Clear logs for **HF-only** vs **Unsloth fast** path (and why it chose it).
+  - Robust quantization handling (`auto` / `4bit` / `none`).
+- **Improved adapter inference (`infer_with_peft.py`)**
+  - Safer MXFP4 vs 4-bit behavior.
+  - Better fallbacks when attaching LoRA adapters.
+
+These changes make inference on mixed GPU clusters more **transparent** and **reproducible**.
 
 ---
 
@@ -44,6 +62,9 @@ cd /scratch/$USER
 git clone https://github.com/hwang2006/finetuning-gpt-oss-on-hpc.git
 cd finetuning-gpt-oss-on-hpc
 
+# (Recommended) checkout the latest stable tag for reproducibility
+git checkout v1.0.0
+
 # (Optional) SLURM interactive GPU shell
 # srun -A <account> -p <gpu-partition> --gres=gpu:1 --pty bash
 
@@ -64,17 +85,17 @@ singularity exec --nv "$SIF" bash -lc '
   echo "CUDA OK"; nvidia-smi | head -10
 '
 ```
-> Need 4-bit or mixing GPUs? See the [compatibility matrix](#compatibility-matrix--gpus--transformers--4-bit-behavior).
+> Need 4-bit or mixing GPUs? See the [compatibility matrix](#version-pinning--compatibility).
 
 ---
 ## Repository Layout
 
 ```
 .
-├── run_infer.sh              # Singularity-first chat/infer wrapper (streaming supported)
+├── run_infer.sh              # Singularity-first chat/infer wrapper (streaming, pin-policy, debug banner)
 ├── run_train.sh              # Single/Multi-GPU training wrapper (torchrun inside)
-├── infer_unsloth.py          # Direct Unsloth inference
-├── infer_with_peft.py        # Inference with saved LoRA adapter (PEFT)
+├── infer_unsloth.py          # HF-only vs Unsloth fast inference (auto-choose; env overrides)
+├── infer_with_peft.py        # Inference with saved LoRA adapter (PEFT; MXFP4-safe)
 ├── train_unsloth.py          # Minimal SFT example
 ├── train_unsloth_flex.py     # Flexible SFT (packing, JSONL/HF datasets, torchrun-ready)
 ├── upload_lora_to_hf.py      # Push LoRA + tokenizer to Hugging Face
@@ -109,16 +130,17 @@ singularity pull "$SIFDIR/pt-2.8.0-cu129-devel.sif" \
       oras://ghcr.io/hwang2006/pt-2.8.0-cu129-devel:1.0
 ```
 
-> This is the **customized image** I built and uploded to GHCR. It include:
+> This is the **customized image** built and uploaded to GHCR. It includes:
 > - `git`, `curl`, `wget` installed  
 > - Locale configured (`en_US.UTF-8`) → avoids `setlocale` warnings  
 > - `/scratch`, `/home01`, `/apps` bind dirs created  
 > - Timezone set (`Asia/Seoul`)  
 
->  You can also rebuild it yourself by using or customizing the `pt-2.8.0-cu129-devel.def` definition file if needed:
+> You can also rebuild it yourself by using or customizing the `pt-2.8.0-cu129-devel.def` definition file if needed.
+
 ---
 
-### Option B — Pull the **raw upstream image** from Docker Hub
+### Option B — Pull the **raw upstream image**
 
 ```bash
 singularity pull "$SIFDIR/pt-2.8.0-cu129-devel.sif" \
@@ -171,13 +193,14 @@ singularity exec --nv "$SIF" bash -lc '
   source "'"$VENV"'/bin/activate"
   python -m pip list | grep -Ei "transformers|peft|bitsandbytes|kernels|unsloth"
 '
-bitsandbytes             0.47.0
-kernels                  0.9.0
-peft                     0.17.1
-transformers             4.56.0
-triton_kernels           1.0.0
-unsloth                  2025.8.10
-unsloth_zoo              2025.8.9
+# example expected:
+# bitsandbytes   0.47.0
+# kernels        0.9.0
+# peft           0.17.1
+# transformers   4.56.0
+# triton_kernels 1.0.0
+# unsloth        2025.8.10
+# unsloth_zoo    2025.8.9
 
 # Optional: enable accelerated Hub transfers globally
 export HF_HUB_ENABLE_HF_TRANSFER=1
@@ -211,55 +234,10 @@ PY
 ## 4) Inference 
 
 > **Tip:** `./run_infer.sh --help` lists all options. Pass your paths explicitly if needed (`--sif`, `--venv`, `--pyfile`).  
-> **This section uses *base models only* (no adapters yet).** LoRA adapter inference appears later in §7.
+> Use `DEBUG_BANNER=1` to print a startup banner including **Pin Decision** and GPU list.
 
 ```bash
 ./run_infer.sh --help
-Usage: ./run_infer.sh [options]
-
-Container & workspace:
-  --sif PATH                Singularity image (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
-  --work DIR                Work dir; also sets VENV=$WORK/venv (default: /scratch/qualis/finetuning-gpt-oss-on-hpc)
-  --venv DIR                Python virtualenv inside container (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
-  --pyfile FILE             Python entrypoint (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/infer_unsloth.py)
-
-Model & prompts:
-  --model ID                Base model id (default: Qwen/Qwen2.5-7B-Instruct)
-  --system STR              System prompt (default: You are a concise, helpful assistant. Avoid making up facts.)
-  --user STR                User prompt (default: Tell me a fun, one-paragraph fact about space.)
-
-PEFT / LoRA:
-  --adapter PATH|REPO       LoRA adapter path/repo (switches to infer_with_peft.py)
-  --base-model ID           Base model for adapter (default: --model)
-  --load-in-4bit            Use 4-bit BnB for non-MXFP4 bases (ignored if base is MXFP4)
-
-Decoding & runtime:
-  --max-seq-len N           Max sequence length (default: 4096)
-  --max-new N               Max new tokens (default: 512)
-  --sample 0|1              Enable sampling (default: 1)
-  --temp FLOAT              Temperature (default: 0.7)
-  --top-p FLOAT             Top-p (default: 0.9)
-  --stream 0|1              Stream tokens (default: 1)
-  --device-map STR          Device map (auto|balanced_low_0|cuda:0|...) (default: auto)
-  --multi-gpu 0|1           Shard across GPUs (default: 1)
-  --headroom GB             Per-GPU memory headroom in GB (default: 2)
-
-GPU selection:
-  --gpus CSV                Explicit GPU list, e.g. "0,1"; if unset, auto-detects
-
-Transformers pin policy:
-  --pin-policy {auto|stability|none}   Policy for transformers version (default: auto)
-  --no-pin                 Alias for --pin-policy none
-
-Help:
-  -h, --help               Show this message and exit
-
-Notes:
-  • QUANTIZE (env): auto|none|4bit — affects quantization strategy.
-  • Path selection (env): HF_ONLY=0|1, USE_UNSLOTH=0|1 (defaults auto-choose for tiny models).
-  • DISABLE_STREAM=1 forces non-streaming even when --stream 1.
-  • BASE_ID is computed from --base-model (if set) or --model for MXFP4 detection.
-  • DEBUG_BANNER=1 enables the debug banner at startup (default: 0).
 ```
 
 ### Single GPU
@@ -284,7 +262,7 @@ Notes:
 ### Streaming & Long Outputs
 ```bash
 # Stream tokens as they generate
-./run_infer.sh \
+DEBUG_BANNER=1 ./run_infer.sh \
   --model openai/gpt-oss-20b \
   --stream 1 \
   --max-new 1200 --max-seq-len 8192 \
@@ -300,64 +278,6 @@ Notes:
 
 ```bash
 ./run_train.sh --help
-Usage: ./run_train.sh [options]
-
-Paths:
-  --sif PATH                 Singularity image (.sif) path (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
-  --work DIR                 Work dir (venv + pyfile live here) (default: /scratch/qualis/finetuning-gpt-oss-on-hpc)
-  --venv DIR                 Python venv path (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
-  --pyfile FILE              Training Python file (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/train_unsloth_flex.py)
-
-Model & Output:
-  --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
-  --out DIR                  Output dir for adapter/tokenizer (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/outputs/Qwen2.5-0.5B-Instruct-lora-20250830-161821)
-
-Datasets:
-  --dataset NAME             HF dataset name (default: yahma/alpaca-cleaned)
-  --split SPLIT              HF dataset split (default: train)
-  --jsonl FILE               JSONL file (enables JSONL mode)
-  --jsonl-prompt NAME        JSONL instruction field (default: instruction)
-  --jsonl-input NAME         JSONL input/ctx field (default: input)
-  --jsonl-response NAME      JSONL response field (default: output)
-
-Prompting / Sequence:
-  --system "TEXT"            System prompt (default: "You are a helpful, careful assistant.")
-  --max-seq-len N            Max sequence length (default: 4096)
-  --packing 0|1              Pack short examples (default: 1)
-
-LoRA:
-  --lora-r N                 LoRA rank r (default: 16)
-  --lora-alpha N             LoRA alpha (default: 16)
-  --lora-dropout F           LoRA dropout (default: 0.0)
-  --lora-targets LIST        Comma-separated target modules
-                             (default: q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj)
-
-Training:
-  --bs N                     per-device batch size (default: 1)
-  --ga N                     gradient accumulation steps (default: 8)
-  --epochs F                 number of epochs (default: 1.0)
-  --lr F                     learning rate (default: 2e-4)
-  --warmup F                 warmup ratio (default: 0.03)
-  --wd F                     weight decay (default: 0.0)
-  --log-steps N              logging steps (default: 10)
-  --save-steps N             checkpoint save steps (default: 500)
-  --eval-steps N             eval steps (0 disables) (default: 0)
-  --seed N                   random seed (default: 42)
-  --bf16 0|1                 enable bf16 if supported (default: 1)
-  --gc 0|1                   gradient checkpointing (default: 1)
-  --workers N                dataset num_proc (default: 4)
-  --report STR               none|wandb|tensorboard (default: none)
-  --save-limit N             max checkpoints to keep (default: 3)
-  --4bit 0|1                 load base in 4-bit (QLoRA) (default: 1)
-
-GPUs:
-  --gpus LIST                e.g., "0" or "0,1,2,3"; if unset, auto-detect
-                             (current: "<auto>")
-  --multi-gpu 0|1            use torchrun across GPUs (default: 1)
-
-Notes:
-  • In multi-GPU mode, this script auto-disables Torch Dynamo/Inductor and Unsloth's
-    fused CE for stability, and auto-disables packing unless Flash-Attn 2 is installed.
 ```
 
 ### Single GPU 
@@ -386,7 +306,7 @@ Notes:
 
 ### Flexible trainer with torchrun
 
-Use the flexible trainer (`train_unsloth_flex.py`) directly if you want for more control (packing, JSONL/HF datasets, etc.).
+Use the flexible trainer (`train_unsloth_flex.py`) directly for more control (packing, JSONL/HF datasets, etc.).
 
 ```bash
 # Example: Qwen 7B, Alpaca 1% split, 2 GPUs data parallel
@@ -529,7 +449,6 @@ This script:
 
 ## 7) Inference with LoRA Adapters (after training/upload)
 
-> Now that you’ve trained/uploaded adapters, you can run adapter‑aware inference.  
 > `run_infer.sh` will **auto‑switch** to `infer_with_peft.py` when `--adapter` is provided.
 
 ### Inference with a **local** LoRA adapter
@@ -552,60 +471,68 @@ This script:
   --user "Suggest a heartwarming film and explain why in one sentence."
 ```
 
-> On **Transformers 4.55.4**, the script will **fall back to bf16/fp16** if 4-bit quantization isn’t supported by that version. See the next section for the pinning strategy.
+> For MXFP4 bases (e.g., GPT‑OSS vendor quant), `--load-in-4bit` is ignored to avoid conflicts. See pinning strategy below.
+
 ---
 ## Version Pinning & Compatibility
+
+### Pin-policy overview
+- **`auto` (default)**  
+  - **MXFP4 base:** ensure `transformers >= 4.56`.  
+  - **Non‑MXFP4 base:** leave installed version as‑is.
+- **`stability`**  
+  - **MXFP4 base:** ensure `transformers >= 4.56`.  
+  - **Non‑MXFP4 base:** **pin to `transformers==4.55.4`** (a widely stable combo with Unsloth).
+- **`none` / `--no-pin`**  
+  - Never change `transformers` (you’re on your own if incompatible).
+
+See the **[PIN DECISION]** line in the debug banner (`DEBUG_BANNER=1`) to know exactly what was chosen.
+
 ### Why pin at all?
-Transformers **4.56–4.57** introduced a new quantization stack (AutoHfQuantizer). Mixing old/new quant paths caused errors like:
+Transformers **4.56–4.57** introduced a new quantization stack (AutoHfQuantizer). Mixing old/new paths caused errors like:
 - `AttributeError: 'BitsAndBytesConfig' object has no attribute 'get_loading_attributes'`
 - `AttributeError: 'Bnb4BitHfQuantizer' object has no attribute 'get_loading_attributes'`
 
-This repo uses a pragmatic split:
-- **Training**: relies on Unsloth + stable Transformers on your image; no hard pin in `run_train.sh`. The script auto-disables fragile paths (e.g., fused CE) when needed.
-- **Inference**: `run_infer.sh` contains a **pin block** that prefers **Transformers 4.55.4** for Unsloth’s eager path **unless** you explicitly want 4-bit with the new API.
-  - On 4.55.4, --load-in-4bit gracefully falls back to bf16/fp16.
-  - If you truly need 4-bit via the new API, set up a **separate venv** pinned to `transformers>=4.56,<4.58` and use the adapter-aware `infer_with_peft.py` (which can build the new quantizer config). Some HPC mirrors don’t carry those wheels; your pin block will tell you if that’s the case.
+This repo uses a pragmatic split to keep things reliable on clusters.
 
-### Check the active versions (inside the container):
-```bash
-singularity exec --nv "$SIF" bash -lc '
-  source "'"$VENV"'/bin/activate"
-  python -m pip list | grep -Ei "transformers|peft|bitsandbytes|unsloth"
-'
-```
-### Compatibility Matrix — GPUs × Transformers × 4-bit behavior
+### Quick compatibility matrix — GPUs × Transformers × 4-bit
 
-| GPU (arch)     | SM | Preferred dtype | Transformers **4.55.4** (legacy path) | Transformers **4.56.0.dev0 (new quant) | 
+| GPU (arch)     | SM | Preferred dtype | TF **4.55.4** (legacy)           | TF **≥4.56** (new quant)                |
 |---|---:|---|---|---|
-| **H200 / H100 (Hopper)** | 90 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). |
-| **A100 (Ampere)**        | 80 | **bf16** | ✅ Stable infer/train (bf16). `--load-in-4bit` ➜ **falls back** to bf16 with warning. | ✅ Recommended for true 4-bit via *AutoHfQuantizer* (separate venv). |
-| **V100 (Volta)**         | 70 | **fp16** | ✅ Stable infer/train (fp16). `--load-in-4bit` ➜ **falls back** to fp16 with warning. | ✅ 4-bit can work via *AutoHfQuantizer*; non-quant paths stay **fp16**. |
+| **H200 / H100 (Hopper)** | 90 | **bf16** | ✅ Stable; `--load-in-4bit` falls back to bf16 | ✅ Real 4-bit via AutoHfQuantizer |
+| **A100 (Ampere)**        | 80 | **bf16** | ✅ Stable; `--load-in-4bit` falls back to bf16 | ✅ Real 4-bit via AutoHfQuantizer |
+| **V100 (Volta)**         | 70 | **fp16** | ✅ Stable; `--load-in-4bit` falls back to fp16 | ✅ 4-bit can work; non-quant stays fp16 |
 
 **Notes**
-1) `run_infer.sh` pins to **Transformers 4.55.4** for reliable Unsloth eager inference. On this version, `--load-in-4bit` **gracefully falls back** to bf16/fp16.  
-2) If you **need real 4-bit**, use a **separate venv** with `transformers>=4.56,<4.58` and run `infer_with_peft.py` (new *AutoHfQuantizer* path). Some HPC mirrors may not carry those wheels.  
-3) Make sure `bitsandbytes` (e.g., 0.47.0) and Triton (≥3.4.0) are in the venv; otherwise you’ll see MXFP4 fallback messages.  
-4) `run_train.sh` doesn’t hard-pin TF; it toggles safe DDP flags and only requires Flash-Attn 2 if `PACKING=1`.  
-5) V100 lacks bf16 → use fp16 (scripts already choose this).  
+1) On **MXFP4** bases, use TF **≥4.56** and `dtype="auto"`; 4-bit flags are ignored.  
+2) If you **need true 4‑bit**, create a separate venv with `transformers >= 4.56` and run the PEFT path (`infer_with_peft.py`).  
+3) Ensure `bitsandbytes` and `triton` are available in the venv; otherwise you’ll see fallbacks.
 
 ---
 ## Troubleshooting
-- **“PACKING=1 requested but flash-attn not installed; forcing PACKING=0”**
-Flash-Attention 2 isn’t available on your node. The trainer will run with packing off. That’s fine; performance just won’t get the extra packing boost.
-- **Quantization API errors on 4.56–4.57**
-If you see `get_loading_attributes` crashes, either:
-  - stay on **4.55.4** (default) and skip 4-bit, or
-  - use a separate venv with `transformers>=4.56,<4.58` (if your cluster mirror offers it), and rely on `infer_with_peft.py`’s new quantizer path.
-- **bitsandbytes not found**
-Install `bitsandbytes` in the venv (already in the quick start). Some clusters require NCCL/CUDA matching; use the container we ship.
-- **No GPU in container**
-Add `--nv` to every `singularity exec` and run on a GPU node. Check `nvidia-smi` inside the container.
-- **HF auth / private repos**
-Use `huggingface-cli login` inside the container, or set `HF_TOKEN` for scripts that push models.
-- **Long downloads/uploads**
-`pip install "huggingface_hub[hf_transfer]"` and export `HF_HUB_ENABLE_HF_TRANSFER=1`.
-- **Kernel warnings**
-Very old kernels may cause hangs with Accelerate/torch.distributed; this is a cluster-level setting. If you see warnings, ask your admins about a newer host kernel.
+
+- **Adapter path error**: “Can’t find `adapter_config.json` at `/path/...`”  
+  → Point `--adapter` to the **exact folder** that contains `adapter_config.json` and `adapter_model.safetensors`.  
+  → If you have a **merged model** (full weights), use `--model /path` instead of `--adapter`.
+
+- **“PACKING=1 requested but flash-attn not installed; forcing PACKING=0”**  
+  Flash-Attention 2 isn’t available on your node. The trainer will run with packing off.
+
+- **Quantization API errors on 4.56–4.57**  
+  Either stay on **4.55.4** (skip 4-bit), or use a separate venv with `transformers >= 4.56` and `infer_with_peft.py`.
+
+- **bitsandbytes not found**  
+  Install `bitsandbytes` in the venv (already in the quick start).
+
+- **No GPU in container**  
+  Add `--nv` to every `singularity exec` and run on a GPU node. Check `nvidia-smi` inside the container.
+
+- **HF auth / private repos**  
+  Use `huggingface-cli login` inside the container, or set `HF_TOKEN` for scripts that push models.
+
+- **Long downloads/uploads**  
+  `pip install "huggingface_hub[hf_transfer]"` and export `HF_HUB_ENABLE_HF_TRANSFER=1`.
+
 ---
 
 ## License
