@@ -618,27 +618,74 @@ This repo uses a pragmatic split:
 ---
 ## Troubleshooting
 
-- **Adapter path error**: “Can’t find `adapter_config.json` at `/path/...`”  
-  → Point `--adapter` to the **exact folder** that contains `adapter_config.json` and `adapter_model.safetensors`.  
-  → If you have a **merged model** (full weights), use `--model /path` instead of `--adapter`.
-
 - **“PACKING=1 requested but flash-attn not installed; forcing PACKING=0”**  
-  Flash-Attention 2 isn’t available on your node. The trainer will run with packing off.
+  Flash-Attention 2 isn’t available on your node. The trainer disables packing automatically. That’s fine — training just won’t get the extra performance boost.
 
-- **Quantization API errors on 4.56–4.57**  
-  Either stay on **4.55.4** (skip 4-bit), or use a separate venv with `transformers >= 4.56` and `infer_with_peft.py`.
+- **Quantization API errors on Transformers 4.56+**  
+  Errors like:  
+  ```none
+  AttributeError: 'BitsAndBytesConfig' object has no attribute 'get_loading_attributes'
+  ```  
+  Fix:  
+  - Stay on **Transformers 4.55.4** (default in `--pin-policy stability`) → safe, but no true 4-bit.  
+  - Or use **Transformers ≥4.56** in a separate venv → required for **true 4-bit via AutoHfQuantizer**.
+
+- **LoRA adapter not found**  
+  ```none
+  ValueError: Can't find 'adapter_config.json' at '/path/to/adapter'
+  ```  
+  Ensure `--adapter` points to the folder that contains **both**:
+  - `adapter_config.json`
+  - `adapter_model.safetensors`  
+  Example:  
+  ```bash
+  ./run_infer.sh     --adapter "$REPO/unsloth-out-20b"     --base-model openai/gpt-oss-20b
+  ```
+
+- **MXFP4 + `--load-in-4bit`**  
+  If the base is MXFP4 (like GPT-OSS 20B), the flag is ignored with a warning:  
+  ```none
+  [WARN] Base is MXFP4; ignoring --load-in-4bit to avoid conflict.
+  ```  
+  This is expected — MXFP4 kernels already provide vendor quantization.
 
 - **bitsandbytes not found**  
-  Install `bitsandbytes` in the venv (already in the quick start).
+  Install it in the container venv:  
+  ```bash
+  pip install bitsandbytes
+  ```  
+  Make sure NCCL/CUDA versions match your cluster’s GPUs.
 
 - **No GPU in container**  
-  Add `--nv` to every `singularity exec` and run on a GPU node. Check `nvidia-smi` inside the container.
+  Always add `--nv` to `singularity exec`.  
+  Verify inside container:  
+  ```bash
+  nvidia-smi
+  ```
 
-- **HF auth / private repos**  
-  Use `huggingface-cli login` inside the container, or set `HF_TOKEN` for scripts that push models.
+- **HF authentication / private repos**  
+  - Run `huggingface-cli login` inside the container, or  
+  - Export a token:  
+    ```bash
+    export HF_TOKEN=hf_xxx
+    ```
 
-- **Long downloads/uploads**  
-  `pip install "huggingface_hub[hf_transfer]"` and export `HF_HUB_ENABLE_HF_TRANSFER=1`.
+- **Slow uploads/downloads**  
+  Install HF transfer acceleration:  
+  ```bash
+  pip install "huggingface_hub[hf_transfer]"
+  export HF_HUB_ENABLE_HF_TRANSFER=1
+  ```
+
+- **“past_key_values=None” crash on Unsloth fast path (tiny Qwen models)**  
+  Known issue on very small models (e.g. Qwen 0.5B).  
+  Fix: rerun with:  
+  ```bash
+  HF_ONLY=1 ./run_infer.sh --model Qwen/Qwen2.5-0.5B-Instruct ...
+  ```
+
+- **Kernel or NCCL warnings**  
+  Very old host kernels may cause hangs with `torch.distributed`. If you see this, check with your HPC admins about updating the kernel or NCCL.
 
 ---
 
