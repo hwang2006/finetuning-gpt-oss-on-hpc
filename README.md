@@ -583,7 +583,6 @@ This script:
 ### Why pin at all?
 Transformers **4.56–4.57** introduced a new quantization stack (AutoHfQuantizer). Mixing old/new quant paths caused errors like:
 - `AttributeError: 'BitsAndBytesConfig' object has no attribute 'get_loading_attributes'`
-- `AttributeError: 'Bnb4BitHfQuantizer' object has no attribute 'get_loading_attributes'`
 
 This repo uses a pragmatic split:
 - **Training**: relies on Unsloth + stable Transformers on your image; no hard pin in `run_train.sh`.  
