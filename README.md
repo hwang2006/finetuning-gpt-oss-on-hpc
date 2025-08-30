@@ -217,40 +217,49 @@ PY
 ./run_infer.sh --help
 Usage: ./run_infer.sh [options]
 
-Paths:
-  --sif PATH                 SIF image (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
-  --work DIR                 Work dir (defaults venv/pyfile under it)
-  --venv DIR                 Python venv path (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
-  --pyfile FILE              Path to infer script (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/infer_unsloth.py)
+Container & workspace:
+  --sif PATH                Singularity image (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
+  --work DIR                Work dir; also sets VENV=$WORK/venv (default: /scratch/qualis/finetuning-gpt-oss-on-hpc)
+  --venv DIR                Python virtualenv inside container (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
+  --pyfile FILE             Python entrypoint (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/infer_unsloth.py)
 
-Model & decoding:
-  --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
-  --max-seq-len N            (default: 4096)
-  --max-new N                (default: 512)
-  --sample 0|1               do_sample (default: 1)
-  --temp F                   temperature (default: 0.7)
-  --top-p F                  top_p (default: 0.9)
+Model & prompts:
+  --model ID                Base model id (default: Qwen/Qwen2.5-7B-Instruct)
+  --system STR              System prompt (default: You are a concise, helpful assistant. Avoid making up facts.)
+  --user STR                User prompt (default: Tell me a fun, one-paragraph fact about space.)
 
-Multi-GPU:
-  --gpus LIST                e.g. "0" or "0,1,2,3"; if unset, auto-detect
-  --multi-gpu 0|1            enable sharding (default: 1)
-  --device-map STR           auto | balanced_low_0 | cuda:0 (default: auto)
-  --headroom GiB             per-GPU reserve (default: 2)
+PEFT / LoRA:
+  --adapter PATH|REPO       LoRA adapter path/repo (switches to infer_with_peft.py)
+  --base-model ID           Base model for adapter (default: --model)
+  --load-in-4bit            Use 4-bit BnB for non-MXFP4 bases (ignored if base is MXFP4)
 
-Streaming:
-  --stream 0|1               print tokens as generated (default: 1)
+Decoding & runtime:
+  --max-seq-len N           Max sequence length (default: 4096)
+  --max-new N               Max new tokens (default: 512)
+  --sample 0|1              Enable sampling (default: 1)
+  --temp FLOAT              Temperature (default: 0.7)
+  --top-p FLOAT             Top-p (default: 0.9)
+  --stream 0|1              Stream tokens (default: 1)
+  --device-map STR          Device map (auto|balanced_low_0|cuda:0|...) (default: auto)
+  --multi-gpu 0|1           Shard across GPUs (default: 1)
+  --headroom GB             Per-GPU memory headroom in GB (default: 2)
 
-Prompts:
-  --system "TEXT"            system prompt
-  --user "TEXT"              user prompt
+GPU selection:
+  --gpus CSV                Explicit GPU list, e.g. "0,1"; if unset, auto-detects
 
-Adapters (PEFT / LoRA):
-  --adapter PATH|REPO        LoRA adapter dir or HF repo (auto-switches script)
-  --base-model ID            Base model to pair with adapter (default: --model)
-  --load-in-4bit 0|1         Load base in 4-bit (default: off)
+Transformers pin policy:
+  --pin-policy {auto|stability|none}   Policy for transformers version (default: auto)
+  --no-pin                 Alias for --pin-policy none
+
+Help:
+  -h, --help               Show this message and exit
+
 Notes:
-  * When --adapter is set, this wrapper auto-switches to infer_with_peft.py
-    if found next to your script or under --work.
+  • QUANTIZE (env): auto|none|4bit — affects quantization strategy.
+  • Path selection (env): HF_ONLY=0|1, USE_UNSLOTH=0|1 (defaults auto-choose for tiny models).
+  • DISABLE_STREAM=1 forces non-streaming even when --stream 1.
+  • BASE_ID is computed from --base-model (if set) or --model for MXFP4 detection.
+  • DEBUG_BANNER=1 enables the debug banner at startup (default: 0).
 ```
 
 ### Single GPU
@@ -294,18 +303,14 @@ Notes:
 Usage: ./run_train.sh [options]
 
 Paths:
-  --sif PATH                 Singularity image (.sif) path
-                             (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
-  --work DIR                 Work dir (venv + pyfile live here)
-                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc)
+  --sif PATH                 Singularity image (.sif) path (default: /scratch/qualis/sifs/pt-2.8.0-cu129-devel.sif)
+  --work DIR                 Work dir (venv + pyfile live here) (default: /scratch/qualis/finetuning-gpt-oss-on-hpc)
   --venv DIR                 Python venv path (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/venv)
-  --pyfile FILE              Training Python file
-                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/train_unsloth_flex.py)
+  --pyfile FILE              Training Python file (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/train_unsloth_flex.py)
 
 Model & Output:
   --model ID                 HF model id (default: Qwen/Qwen2.5-0.5B-Instruct)
-  --out DIR                  Output dir for adapter/tokenizer
-                             (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/outputs/Qwen2.5-0.5B-Instruct-lora-YYYYMMDD-HHMMSS)
+  --out DIR                  Output dir for adapter/tokenizer (default: /scratch/qualis/finetuning-gpt-oss-on-hpc/outputs/Qwen2.5-0.5B-Instruct-lora-20250830-161821)
 
 Datasets:
   --dataset NAME             HF dataset name (default: yahma/alpaca-cleaned)
@@ -316,8 +321,7 @@ Datasets:
   --jsonl-response NAME      JSONL response field (default: output)
 
 Prompting / Sequence:
-  --system "TEXT"            System prompt used in chat template
-                             (default: "You are a helpful, careful assistant.")
+  --system "TEXT"            System prompt (default: "You are a helpful, careful assistant.")
   --max-seq-len N            Max sequence length (default: 4096)
   --packing 0|1              Pack short examples (default: 1)
 
@@ -331,7 +335,7 @@ LoRA:
 Training:
   --bs N                     per-device batch size (default: 1)
   --ga N                     gradient accumulation steps (default: 8)
-  --epochs F                 number of epochs (float OK) (default: 1.0)
+  --epochs F                 number of epochs (default: 1.0)
   --lr F                     learning rate (default: 2e-4)
   --warmup F                 warmup ratio (default: 0.03)
   --wd F                     weight decay (default: 0.0)
@@ -342,7 +346,7 @@ Training:
   --bf16 0|1                 enable bf16 if supported (default: 1)
   --gc 0|1                   gradient checkpointing (default: 1)
   --workers N                dataset num_proc (default: 4)
-  --report STR               reporting: none|wandb|tensorboard (default: none)
+  --report STR               none|wandb|tensorboard (default: none)
   --save-limit N             max checkpoints to keep (default: 3)
   --4bit 0|1                 load base in 4-bit (QLoRA) (default: 1)
 
@@ -351,14 +355,9 @@ GPUs:
                              (current: "<auto>")
   --multi-gpu 0|1            use torchrun across GPUs (default: 1)
 
-Examples:
-  # Single GPU, Alpaca 1%, 4-bit + packing
-  ./run_train.sh --model Qwen/Qwen2.5-0.5B-Instruct --dataset yahma/alpaca-cleaned --split 'train[:1%]' \
-     --gpus 0 --multi-gpu 0 --out ./out/s1-alpaca1 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 1
-
-  # Two GPUs data parallel (torchrun), IMDB 2%, 4-bit, no packing
-  ./run_train.sh --model Qwen/Qwen2.5-0.5B-Instruct --dataset imdb --split 'train[:2%]' \
-     --gpus 0,1 --multi-gpu 1 --gc 0 --out ./out/dp2-imdb2 --bs 1 --ga 16 --epochs 1 --4bit 1 --packing 0
+Notes:
+  • In multi-GPU mode, this script auto-disables Torch Dynamo/Inductor and Unsloth's
+    fused CE for stability, and auto-disables packing unless Flash-Attn 2 is installed.
 ```
 
 ### Single GPU 
