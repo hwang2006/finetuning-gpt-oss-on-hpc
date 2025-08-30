@@ -1,4 +1,4 @@
-# Finetuning GPT-OSS on a Supercomputer (SLURM + Singularity)
+[# Finetuning GPT-OSS on a Supercomputer (SLURM + Singularity)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/downloads/)
@@ -6,14 +6,14 @@
 [![Singularity](https://img.shields.io/badge/Container-Singularity-indigo.svg)](https://docs.sylabs.io/guides/3.5/user-guide/introduction.html)
 [![Unsloth](https://img.shields.io/badge/Unsloth-2025.x-orange.svg)](https://github.com/unslothai/unsloth)
 
-This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OSS and similar HF models on HPC systems** using **[Unsloth](https://github.com/unslothai/unsloth) inside Singularity/Apptainer containers**. 
+This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT-OSS and similar HF models on HPC systems** using **[Unsloth](https://github.com/unslothai/unsloth) inside Singularity/Apptainer containers**. 
 
 - Tested on H200/A100/V100 multi-GPU nodes with the **PyTorch 2.8.0 • CUDA 12.9 devel** image.
 - All steps (venv setup, training, inference, and HF upload) run inside the container.
 - Compatible with Singularity or Apptainer (on many clusters singularity is a symlink to Apptainer).
 
 **Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>  
-**Latest tag:** `v1.0.0`
+**Latest release:** [v1.0.0](https://github.com/hwang2006/finetuning-gpt-oss-on-hpc/releases/tag/v1.0.0)
 
 ---
 
@@ -21,16 +21,16 @@ This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT‑OS
 
 - **Unified inference wrapper (`run_infer.sh`)**
   - Full `--help` output with **all arguments + defaults**.
-  - `DEBUG_BANNER=1` mode prints resolved paths, GPU list, **and a Pin Decision line**.
-  - Pin-policy logic for `transformers`: `auto` / `stability` / `none`.
+  - Added `DEBUG_BANNER=1` mode to show resolved paths, env vars, GPU list, and **pin decision** at startup.
+  - Smarter pin-policy logic (`auto` / `stability` / `none`) for `transformers` versions.
 - **Cleaner path selection (`infer_unsloth.py`)**
-  - Clear logs for **HF-only** vs **Unsloth fast** path (and why it chose it).
+  - Clear logs whether you’re running **HF-only** or **Unsloth fast path**, and why.
   - Robust quantization handling (`auto` / `4bit` / `none`).
 - **Improved adapter inference (`infer_with_peft.py`)**
-  - Safer MXFP4 vs 4-bit behavior.
-  - Better fallbacks when attaching LoRA adapters.
+  - Better MXFP4 vs 4-bit handling.
+  - Safer fallbacks when attaching LoRA adapters.
 
-These changes make inference on mixed GPU clusters more **transparent** and **reproducible**.
+This makes inference runs on mixed GPU clusters more **transparent** and **reproducible**.
 
 ---
 
@@ -638,37 +638,42 @@ This script:
 ---
 ## Version Pinning & Compatibility
 
-### Pin-policy overview
-- **`auto` (default)**  
-  - **MXFP4 base:** ensure `transformers >= 4.56`.  
-  - **Non‑MXFP4 base:** leave installed version as‑is.
-- **`stability`**  
-  - **MXFP4 base:** ensure `transformers >= 4.56`.  
-  - **Non‑MXFP4 base:** **pin to `transformers==4.55.4`** (a widely stable combo with Unsloth).
-- **`none` / `--no-pin`**  
-  - Never change `transformers` (you’re on your own if incompatible).
-
-See the **[PIN DECISION]** line in the debug banner (`DEBUG_BANNER=1`) to know exactly what was chosen.
 
 ### Why pin at all?
-Transformers **4.56–4.57** introduced a new quantization stack (AutoHfQuantizer). Mixing old/new paths caused errors like:
+Transformers **4.56–4.57** introduced a new quantization stack (AutoHfQuantizer). Mixing old/new quant paths caused errors like:
 - `AttributeError: 'BitsAndBytesConfig' object has no attribute 'get_loading_attributes'`
 - `AttributeError: 'Bnb4BitHfQuantizer' object has no attribute 'get_loading_attributes'`
 
-This repo uses a pragmatic split to keep things reliable on clusters.
+This repo uses a pragmatic split:
+- **Training**: relies on Unsloth + stable Transformers on your image; no hard pin in `run_train.sh`.  
+- **Inference**: `run_infer.sh` decides based on `--pin-policy` (`auto`, `stability`, `none`).
 
-### Quick compatibility matrix — GPUs × Transformers × 4-bit
+---
 
-| GPU (arch)     | SM | Preferred dtype | TF **4.55.4** (legacy)           | TF **≥4.56** (new quant)                |
-|---|---:|---|---|---|
-| **H200 / H100 (Hopper)** | 90 | **bf16** | ✅ Stable; `--load-in-4bit` falls back to bf16 | ✅ Real 4-bit via AutoHfQuantizer |
-| **A100 (Ampere)**        | 80 | **bf16** | ✅ Stable; `--load-in-4bit` falls back to bf16 | ✅ Real 4-bit via AutoHfQuantizer |
-| **V100 (Volta)**         | 70 | **fp16** | ✅ Stable; `--load-in-4bit` falls back to fp16 | ✅ 4-bit can work; non-quant stays fp16 |
+### Transformers Pin Policy (Summary)
 
-**Notes**
-1) On **MXFP4** bases, use TF **≥4.56** and `dtype="auto"`; 4-bit flags are ignored.  
-2) If you **need true 4‑bit**, create a separate venv with `transformers >= 4.56` and run the PEFT path (`infer_with_peft.py`).  
-3) Ensure `bitsandbytes` and `triton` are available in the venv; otherwise you’ll see fallbacks.
+| Pin policy | MXFP4 base (e.g., gpt-oss-20b) | Non-MXFP4 base (e.g., Qwen) |
+|------------|--------------------------------|-----------------------------|
+| **auto** (default) | Ensure **≥4.56** (for dtype="auto") | Leave installed TF version unchanged |
+| **stability** | Ensure **≥4.56** | Force pin to **4.55.4** (known stable for Unsloth eager path) |
+| **none** | Never touch TF | Never touch TF |
+
+---
+
+### Compatibility Matrix — GPU × Base × Transformers × 4-bit behavior
+
+| GPU (arch) | Base type | TF 4.55.4 | TF ≥4.56 |
+|------------|-----------|-----------|----------|
+| **H200 / H100 (Hopper, SM90)** | MXFP4 | ✅ Stable bf16; `--load-in-4bit` ignored | ✅ Uses AutoHfQuantizer (MXFP4 kernels) |
+| | Non-MXFP4 | ✅ Stable bf16; `--load-in-4bit` → falls back to bf16 | ✅ True 4-bit supported via AutoHfQuantizer |
+| **A100 (Ampere, SM80)** | MXFP4 | ✅ Stable bf16; `--load-in-4bit` ignored | ✅ AutoHfQuantizer (MXFP4 kernels) |
+| | Non-MXFP4 | ✅ Stable bf16; `--load-in-4bit` → falls back to bf16 | ✅ True 4-bit supported via AutoHfQuantizer |
+
+**Notes:**
+1. On **4.55.4**, non-MXFP4 bases ignore 4-bit requests → they fall back to bf16/fp16.  
+2. On **≥4.56**, `dtype="auto"` activates MXFP4 vendor quant, and `--load-in-4bit` works properly for non-MXFP4 bases.  
+3. MXFP4 bases always ignore `--load-in-4bit` to avoid conflict.  
+4. Always check `bitsandbytes` and `triton` versions inside your venv.  
 
 ---
 ## Troubleshooting
@@ -700,3 +705,4 @@ This repo uses a pragmatic split to keep things reliable on clusters.
 ## License
 
 MIT — see [LICENSE](LICENSE). If you use this work in research or production, a citation or a ⭐ is appreciated!
+](https://github.com/hwang2006/finetuning-gpt-oss-on-hpc)
