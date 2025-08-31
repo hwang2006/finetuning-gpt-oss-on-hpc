@@ -14,13 +14,11 @@ This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT-OSS 
 
 **Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>  
 **Latest release:** [v1.0.0](https://github.com/hwang2006/finetuning-gpt-oss-on-hpc/releases/tag/v1.0.0)  
-**Example LoRA Adapter (for reference only):** [hwang2006/gpt-oss-20b-alpaca-2pct-lora](https://huggingface.co/hwang2006/gpt-oss-20b-alpaca-2pct-lora)  
+**Example LoRA Adapter for GPT-OSS-20B (for reference only):** [hwang2006/gpt-oss-20b-alpaca-2pct-lora](https://huggingface.co/hwang2006/gpt-oss-20b-alpaca-2pct-lora)
 
-> ⚠️ This adapter is **just a demo trained on a tiny 2% Alpaca split**.  
-> It’s mainly here so you can see the expected Hugging Face repo structure  
-> (`adapter_config.json`, `adapter_model.safetensors`, tokenizer files).  
-> In practice, you’ll want to replace it with your own LoRA trained on your dataset.
-
+> ⚠️ This adapter was trained on a **tiny 2% Alpaca split** with GPT-OSS-20B.  
+> It is provided **for reference only** — to illustrate what a LoRA adapter repo on Hugging Face looks like.  
+> In practice, you should train and upload your own adapter on your dataset.
 
 ---
 
@@ -516,6 +514,8 @@ tail -f slurm-<jobid>.out
 
 ## 6) Upload LoRA Adapter to Hugging Face
 
+After training, you’ll typically want to **push your LoRA adapter to Hugging Face** so you can reuse it later (or share it).
+
 ```bash
 # Where your adapter was saved and your target repo
 export REPO=/scratch/$USER/finetuning-gpt-oss-on-hpc
@@ -528,60 +528,50 @@ export SIF=/scratch/$USER/sifs/pt-2.8.0-cu129-devel.sif
 singularity exec --nv "$SIF" bash -lc '
   source "'"$VENV"'/bin/activate"
   pip install -q "huggingface_hub[hf_transfer]>=0.24.0"
-  python upload_lora_to_hf.py \
-    --adapter-dir "'"$ADAPTER_DIR"'" \
-    --repo-id "'"$REPO_ID"'" \
-    --token "'"$HF_TOKEN"'" \
-    --base-model openai/gpt-oss-20b \
-    --datasets yahma/alpaca-cleaned \
-    --language en \
-    --tags lora,unsloth,peft,gpt-oss,fine-tuning \
-    --ignore checkpoint-* \
-    --license apache-2.0
+  python upload_lora_to_hf.py     --adapter-dir "'"$ADAPTER_DIR"'"     --repo-id "'"$REPO_ID"'"     --token "'"$HF_TOKEN"'"     --base-model openai/gpt-oss-20b     --datasets yahma/alpaca-cleaned     --language en     --tags lora,unsloth,peft,gpt-oss,fine-tuning     --ignore checkpoint-*     --license apache-2.0
 '
 ```
 
 **Target repo naming & permissions**
 
-- Use your **Hugging Face username or org** and a short, descriptive repo name (for example):  
-  `REPO_ID="yourname/qwen2.5-7b-alpaca-1pct-lora"`
-- The script will **create the repo if it doesn’t exist** (public by default). Make it private later if desired.
+- Use your **Hugging Face username or org** and a short, descriptive repo name. For example:  
+  ```bash
+  export REPO_ID="yourname/gpt-oss-20b-alpaca-2pct-lora"
+  ```
+- The script will **create the repo if it doesn’t exist** (public by default). You can make it private later if needed.  
 - `HF_TOKEN` must have **write access** to that namespace (user/org).  
 - Large files are pushed with **hf_transfer** when available for faster I/O.
 
-This script:
+**What this script does:**
 - Fixes `adapter_config.json` fields if needed  
 - Generates a README model card  
 - Creates the repo (public by default) and uploads `adapter_model.safetensors`, tokenizer files, and metadata  
-- Uses `hf_transfer` for faster uploads when available
+- Uses `hf_transfer` for faster uploads when available  
 
 ---
 
 ## 7) Inference with LoRA Adapters (after training/upload)
 
-> `run_infer.sh` will **auto‑switch** to `infer_with_peft.py` when `--adapter` is provided.
+> `run_infer.sh` will **auto-switch** to `infer_with_peft.py` when `--adapter` is provided.
 
 ### Inference with a **local** LoRA adapter
 
 ```bash
-./run_infer.sh \
-  --adapter "$REPO/unsloth-out-20b" \
-  --base-model openai/gpt-oss-20b \
-  --load-in-4bit 1 --stream 1 \
-  --user "Write a short, friendly paragraph about learning Python."
+./run_infer.sh   --adapter "$REPO/unsloth-out-20b"   --base-model openai/gpt-oss-20b   --load-in-4bit 1 --stream 1   --user "Write a short, friendly paragraph about learning Python."
 ```
 
-### Inference with an **HF‑hosted** LoRA adapter
+### Inference with an **HF-hosted** LoRA adapter
+
+You can also directly load from Hugging Face Hub:
 
 ```bash
-./run_infer.sh \
-  --adapter "hwang2006/gpt-oss-20b-alpaca-2pct-lora" \
-  --base-model openai/gpt-oss-20b \
-  --load-in-4bit 1 --stream 1 \
-  --user "Suggest a heartwarming film and explain why in one sentence."
+./run_infer.sh   --adapter "hwang2006/gpt-oss-20b-alpaca-2pct-lora"   --base-model openai/gpt-oss-20b   --load-in-4bit 1 --stream 1   --user "Suggest a heartwarming film and explain why in one sentence."
 ```
-
 > For MXFP4 bases (e.g., GPT‑OSS vendor quant), `--load-in-4bit` is ignored to avoid conflicts. See pinning strategy below.
+
+📌 The above Hugging Face repo ([hwang2006/gpt-oss-20b-alpaca-2pct-lora](https://huggingface.co/hwang2006/gpt-oss-20b-alpaca-2pct-lora))  
+is the same **example adapter for GPT-OSS-20B** mentioned in Section 6.  
+It’s provided **for reference only** — to demonstrate how uploaded adapters look and can be consumed.  
 
 ---
 ## Version Pinning & Compatibility
