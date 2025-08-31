@@ -13,7 +13,14 @@ This repository contains **end-to-end recipes to _finetune_ and _infer_ GPT-OSS 
 - Compatible with Singularity or Apptainer (on many clusters singularity is a symlink to Apptainer).
 
 **Repo:** <https://github.com/hwang2006/finetuning-gpt-oss-on-hpc>  
-**Latest release:** [v1.0.0](https://github.com/hwang2006/finetuning-gpt-oss-on-hpc/releases/tag/v1.0.0)
+**Latest release:** [v1.0.0](https://github.com/hwang2006/finetuning-gpt-oss-on-hpc/releases/tag/v1.0.0)  
+**Example LoRA Adapter (for reference only):** [hwang2006/gpt-oss-20b-alpaca-2pct-lora](https://huggingface.co/hwang2006/gpt-oss-20b-alpaca-2pct-lora)  
+
+> ⚠️ This adapter is **just a demo trained on a tiny 2% Alpaca split**.  
+> It’s mainly here so you can see the expected Hugging Face repo structure  
+> (`adapter_config.json`, `adapter_model.safetensors`, tokenizer files).  
+> In practice, you’ll want to replace it with your own LoRA trained on your dataset.
+
 
 ---
 
